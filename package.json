@@ -20,7 +20,7 @@
   "author": "Jair (https://github.com/jairnx)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jairnx/openclaw-telegram-approval-buttons"
+    "url": "https://github.com/JairFC/openclaw-telegram-approval-buttons"
   },
   "files": [
     "index.ts",
