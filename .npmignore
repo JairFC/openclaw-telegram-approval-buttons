@@ -1,0 +1,28 @@
+# Explicitly control what npm publishes
+# Only files listed in package.json "files" are included,
+# but this acts as a safety net against accidental leaks.
+
+# Tests (never publish)
+tests/
+vitest.config.ts
+
+# Dev/build files
+tsconfig.json
+.github/
+.gitignore
+.env
+.env.*
+
+# Docs assets (only README goes to npm, not screenshots)
+docs/
+
+# OS and IDE
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*

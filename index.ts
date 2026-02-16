@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · index.ts (v4.0.0)
+// telegram-approval-buttons · index.ts (v4.0.2)
 // Plugin entry point — orchestration only, all logic lives in lib/
 //
 // Adds inline keyboard buttons to exec approval messages in Telegram.

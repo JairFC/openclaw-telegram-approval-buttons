@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2026-02-15
+
+### Added
+- `SECURITY.md` — vulnerability reporting policy and security model documentation
+- `.npmignore` — explicit defense-in-depth to prevent accidental file leaks to npm
+
+### Fixed
+- README example path changed from personal path to generic `~/Projects/...`
+
+### Security
+- Documented plugin's in-process trust model and input validation approach
+- Added best practices section for users installing community plugins
+
 ## [4.0.1] - 2026-02-15
 
 ### Added
