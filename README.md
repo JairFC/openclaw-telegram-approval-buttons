@@ -5,14 +5,8 @@
 ## What does this look like?
 
 <p align="center">
-  <img src="docs/01-approval-request.png" width="280" alt="Approval request with inline buttons" />
-  <img src="docs/02-approved-once.png" width="280" alt="Approved (once) — buttons removed" />
-  <img src="docs/03-approval-status.png" width="280" alt="/approvalstatus health check" />
+  <img src="docs/banner.png" alt="Plugin workflow: approval request → allowed → health check" />
 </p>
-
-**Left:** Approval request with ✅ Allow Once · 🔏 Always · ❌ Deny buttons  
-**Center:** After tapping "Allow Once" — resolved, buttons removed  
-**Right:** `/approvalstatus` health check
 
 ## What does this do?
 
