@@ -30,7 +30,7 @@ import {
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const PLUGIN_VERSION = "4.0.0";
+const PLUGIN_VERSION = "4.0.1";
 const TAG = "telegram-approval-buttons";
 
 // ── Plugin registration ─────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ function register(api: any): void {
         config.chatId,
         entry.messageId,
         formatApprovalExpired(entry.info),
-      ).catch(() => {});
+      ).catch(() => { });
     },
   );
 
@@ -90,7 +90,7 @@ function register(api: any): void {
     start: () => {
       store.start();
       // Non-blocking connectivity check
-      runStartupChecks(tg, log).catch(() => {});
+      runStartupChecks(tg, log).catch(() => { });
     },
     stop: () => store.stop(),
   });
