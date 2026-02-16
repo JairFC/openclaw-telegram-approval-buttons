@@ -5,6 +5,10 @@
   "type": "module",
   "main": "index.ts",
   "license": "MIT",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "keywords": [
     "openclaw",
     "openclaw-plugin",
@@ -29,6 +33,11 @@
     "types.ts",
     "lib/",
     "openclaw.plugin.json",
-    "README.md"
-  ]
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "typescript": "^5.7.0"
+  }
 }
