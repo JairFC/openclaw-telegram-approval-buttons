@@ -5,7 +5,7 @@
 ## What does this look like?
 
 <p align="center">
-  <img src="docs/banner.png" alt="Plugin workflow: approval request → allowed → health check" />
+  <img src="https://raw.githubusercontent.com/JairFC/openclaw-telegram-approval-buttons/main/docs/banner.png" alt="Plugin workflow: approval request → allowed → health check" />
 </p>
 
 ## What does this do?
