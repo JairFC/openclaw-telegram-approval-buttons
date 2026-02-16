@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-telegram-approval-buttons",
+  "name": "telegram-approval-buttons",
   "version": "4.0.1",
   "description": "Inline keyboard buttons for exec approval messages in Telegram — tap to approve/deny without typing commands",
   "type": "module",
