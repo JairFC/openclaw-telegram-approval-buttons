@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-02-20
+
+### Changed
+- **Performance: O(1) approval resolution lookup** — `detectApprovalResult()` now extracts UUIDs via regex and performs a direct `Map.has()` lookup instead of iterating all pending entries. The old O(n) linear scan is replaced with O(1) hash lookup for full UUIDs, with a fallback prefix scan only for truncated IDs.
+
+### Added
+- **Gateway denial detection** — New `resolveAction()` function and `RE_GATEWAY_DENIAL` regex detect when the gateway auto-denies an approval due to timeout (`Exec denied.*approval-timeout`). The plugin now immediately cleans up stale Telegram buttons when the gateway reports a timeout, instead of waiting for the stale cleanup timer.
+- **Robust short hex matching** — Short approval IDs are now matched via `\b([a-f0-9]{8,})\b` regex with `startsWith()` prefix matching, supporting variable-length truncated IDs instead of the previous hardcoded 8-char `slice()`.
+
+### Fixed
+- Synced `openclaw.plugin.json` manifest version with `package.json` (was stuck at 4.0.2)
+- Updated header comment in `index.ts` to reflect current version
+
+## [4.0.3] - 2026-02-16
+
+### Fixed
+- Auto-detect `botToken` key from `channels.telegram.botToken` in addition to `channels.telegram.token`
+- Improved README setup documentation with clearer quick start instructions
+
 ## [4.0.2] - 2026-02-15
 
 ### Added

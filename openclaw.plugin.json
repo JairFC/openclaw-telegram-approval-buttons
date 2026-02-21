@@ -2,7 +2,7 @@
   "id": "telegram-approval-buttons",
   "name": "Telegram Approval Buttons",
   "description": "Adds inline keyboard buttons to exec approval messages in Telegram. Tap to approve/deny without typing commands.",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
