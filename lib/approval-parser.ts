@@ -9,6 +9,9 @@ import type { ApprovalAction, ApprovalInfo, ApprovalResolution, SentApproval } f
 
 const RE_APPROVAL_MARKER = /Exec approval required/i;
 const RE_ID = /ID:\s*([a-f0-9-]+)/i;
+const RE_UUID = /([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
+const RE_SHORT_HEX = /\b([a-f0-9]{8,})\b/i;
+const RE_GATEWAY_DENIAL = /Exec denied.*approval-timeout/i;
 const RE_COMMAND_BLOCK = /Command:\s*`{0,3}\n?(.+?)\n?`{0,3}(?:\n|$)/is;
 const RE_COMMAND_INLINE = /Command:\s*(.+)/i;
 const RE_CWD = /CWD:\s*(.+)/i;
@@ -50,24 +53,55 @@ export function parseApprovalText(text: string): ApprovalInfo | null {
 /**
  * Detect if an outgoing message indicates an approval was resolved.
  *
- * Checks whether the message text references any pending approval ID
- * (full UUID or first 8 chars) and attempts to determine the action.
+ * Uses O(1) Map lookup instead of iterating all pending entries:
+ * 1. Extract full UUID from text via regex → direct Map.has() (O(1))
+ * 2. Fallback: extract short hex ID (8+ chars) → scan pending by prefix
+ *
+ * Also detects gateway-initiated denials (approval-timeout) so the
+ * plugin can immediately clean up stale buttons in Telegram.
  */
 export function detectApprovalResult(
   text: string,
   pending: ReadonlyMap<string, SentApproval>,
 ): ApprovalResolution | null {
-  for (const [id] of pending) {
-    const shortId = id.slice(0, 8);
-    if (!text.includes(id) && !text.includes(shortId)) continue;
+  if (pending.size === 0) return null;
 
-    const action = inferAction(text);
-    return { id, action };
+  // Fast path: full UUID → O(1) Map lookup
+  const fullMatch = text.match(RE_UUID);
+  if (fullMatch) {
+    const id = fullMatch[1];
+    if (pending.has(id)) {
+      return { id, action: resolveAction(text) };
+    }
   }
+
+  // Slow path: short hex ID (8+ chars) → prefix scan on pending keys
+  // This handles messages that only reference a truncated approval ID
+  const shortMatch = text.match(RE_SHORT_HEX);
+  if (shortMatch) {
+    const shortId = shortMatch[1];
+    for (const [pendingId] of pending) {
+      if (pendingId.startsWith(shortId)) {
+        return { id: pendingId, action: resolveAction(text) };
+      }
+    }
+  }
+
   return null;
 }
 
 // ─── Internal ───────────────────────────────────────────────────────────────
+
+/**
+ * Determine the approval action from message text.
+ * Checks gateway denial first, then infers from keywords.
+ * Order matters: check most specific patterns first.
+ */
+function resolveAction(text: string): ApprovalAction {
+  // Gateway-initiated denial takes priority (unambiguous signal)
+  if (RE_GATEWAY_DENIAL.test(text)) return "deny";
+  return inferAction(text);
+}
 
 /**
  * Infer the approval action from message text.
