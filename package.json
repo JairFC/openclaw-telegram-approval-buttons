@@ -5,6 +5,9 @@
   "type": "module",
   "main": "index.ts",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -34,7 +37,8 @@
     "lib/",
     "openclaw.plugin.json",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "SECURITY.md"
   ],
   "devDependencies": {
     "@types/node": "^25.2.3",

@@ -114,7 +114,7 @@ Uptime: 1m
 ## Prerequisites
 
 - **OpenClaw ≥ 2026.2.9** installed and running
-- **Node.js ≥ 22** (uses built-in `fetch`)
+- **Node.js ≥ 20** (uses built-in `fetch`)
 - **Telegram configured** in your `openclaw.json` (bot token + `allowFrom`)
 - **Exec approvals targeting Telegram** — see Step 2 above
 
