@@ -23,17 +23,12 @@ export function escapeHtml(text: string): string {
 export function formatApprovalRequest(info: ApprovalInfo): string {
   const e = escapeHtml;
   return [
-    `🔐 <b>Exec Approval Request</b>`,
-    ``,
-    `🤖 Agent: <b>${e(info.agent)}</b>`,
-    `🖥️ Host: <b>${e(info.host)}</b>`,
-    `📁 CWD: <code>${e(info.cwd)}</code>`,
+    `🔐 <b>Exec Approval</b>`,
     ``,
     `<pre>${e(info.command)}</pre>`,
     ``,
-    `🛡️ Security: ${e(info.security)}`,
-    `❓ Ask: ${e(info.ask)}`,
-    `⏱️ Expires: ${e(info.expires)}`,
+    `📁 <code>${e(info.cwd)}</code>`,
+    `🤖 ${e(info.agent)} · ⏱️ ${e(info.expires)}`,
     `🆔 <code>${e(info.id)}</code>`,
   ].join("\n");
 }
@@ -65,15 +60,11 @@ export function formatApprovalResolved(
   const label = ACTION_LABELS[action] ?? action;
 
   return [
-    `${icon} <b>Exec ${label}</b>`,
-    ``,
-    `🤖 Agent: <b>${e(info.agent)}</b>`,
-    `🖥️ Host: <b>${e(info.host)}</b>`,
-    `📁 CWD: <code>${e(info.cwd)}</code>`,
+    `${icon} <b>${label}</b>`,
     ``,
     `<pre>${e(info.command)}</pre>`,
     ``,
-    `🆔 <code>${e(info.id)}</code>`,
+    `🤖 ${e(info.agent)} · 🆔 <code>${e(info.id)}</code>`,
   ].join("\n");
 }
 
@@ -107,26 +98,24 @@ export function buildApprovalKeyboard(approvalId: string): object {
 export function formatApprovalExpired(info: ApprovalInfo): string {
   const e = escapeHtml;
   return [
-    `⏰ <b>Exec Approval Expired</b>`,
-    ``,
-    `🤖 Agent: <b>${e(info.agent)}</b>`,
-    `🖥️ Host: <b>${e(info.host)}</b>`,
+    `⏰ <b>Expired</b>`,
     ``,
     `<pre>${e(info.command)}</pre>`,
     ``,
-    `🆔 <code>${e(info.id)}</code>`,
+    `🤖 ${e(info.agent)} · 🆔 <code>${e(info.id)}</code>`,
   ].join("\n");
 }
 
 // ─── Health / diagnostics format ────────────────────────────────────────────
 
 /**
- * Format a health check result for display in Telegram.
+ * Format a health check result for display.
  */
 export function formatHealthCheck(health: {
   ok: boolean;
-  config: { chatId: boolean; botToken: boolean };
+  config: { telegramChatId: boolean; telegramToken: boolean; slackToken: boolean; slackChannel: boolean };
   telegram: { reachable: boolean; botUsername?: string; error?: string };
+  slack: { reachable: boolean; teamName?: string; error?: string };
   store: { pending: number; totalProcessed: number };
   uptime: number;
 }): string {
@@ -134,16 +123,36 @@ export function formatHealthCheck(health: {
   const lines = [
     `${health.ok ? "🟢" : "🔴"} Approval Buttons Status`,
     ``,
-    `Config: chatId=${health.config.chatId ? "✓" : "✗"} · token=${health.config.botToken ? "✓" : "✗"}`,
   ];
 
-  if (health.telegram.reachable) {
-    lines.push(`Telegram: ✓ connected (@${health.telegram.botUsername ?? "?"})`);
+  // Telegram status
+  const tgConfigured = health.config.telegramChatId && health.config.telegramToken;
+  if (tgConfigured) {
+    lines.push(`Telegram: chatId=${health.config.telegramChatId ? "✓" : "✗"} · token=${health.config.telegramToken ? "✓" : "✗"}`);
+    if (health.telegram.reachable) {
+      lines.push(`  ✓ connected (@${health.telegram.botUsername ?? "?"})`);
+    } else {
+      lines.push(`  ✗ ${health.telegram.error ?? "unreachable"}`);
+    }
   } else {
-    lines.push(`Telegram: ✗ ${health.telegram.error ?? "unreachable"}`);
+    lines.push(`Telegram: not configured`);
+  }
+
+  // Slack status
+  const slackConfigured = health.config.slackToken && health.config.slackChannel;
+  if (slackConfigured) {
+    lines.push(`Slack: token=${health.config.slackToken ? "✓" : "✗"} · channel=${health.config.slackChannel ? "✓" : "✗"}`);
+    if (health.slack.reachable) {
+      lines.push(`  ✓ connected (${health.slack.teamName ?? "?"})`);
+    } else {
+      lines.push(`  ✗ ${health.slack.error ?? "unreachable"}`);
+    }
+  } else {
+    lines.push(`Slack: not configured`);
   }
 
   lines.push(
+    ``,
     `Pending: ${health.store.pending} · Processed: ${health.store.totalProcessed}`,
     `Uptime: ${uptimeMin}m`,
   );

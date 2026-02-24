@@ -26,12 +26,20 @@ describe("ApprovalStore", () => {
 
     // ── Basic CRUD ──────────────────────────────────────────────────────────
 
-    it("adds and retrieves an approval", () => {
-        store.add("id-1", 100, sampleInfo);
+    it("adds and retrieves a telegram approval", () => {
+        store.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
         expect(store.has("id-1")).toBe(true);
         expect(store.get("id-1")).toBeDefined();
+        expect(store.get("id-1")!.channel).toBe("telegram");
         expect(store.get("id-1")!.messageId).toBe(100);
         expect(store.get("id-1")!.info).toEqual(sampleInfo);
+    });
+
+    it("adds and retrieves a slack approval", () => {
+        store.add("id-2", "slack", { slackTs: "1234567890.123456" }, sampleInfo);
+        expect(store.has("id-2")).toBe(true);
+        expect(store.get("id-2")!.channel).toBe("slack");
+        expect(store.get("id-2")!.slackTs).toBe("1234567890.123456");
     });
 
     it("returns undefined for unknown IDs", () => {
@@ -41,15 +49,15 @@ describe("ApprovalStore", () => {
 
     it("tracks pending count", () => {
         expect(store.pendingCount).toBe(0);
-        store.add("id-1", 100, sampleInfo);
-        store.add("id-2", 101, sampleInfo);
+        store.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
+        store.add("id-2", "slack", { slackTs: "ts-1" }, sampleInfo);
         expect(store.pendingCount).toBe(2);
     });
 
     // ── Resolve ─────────────────────────────────────────────────────────────
 
     it("resolves an approval and increments processed count", () => {
-        store.add("id-1", 100, sampleInfo);
+        store.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
         const entry = store.resolve("id-1");
 
         expect(entry).toBeDefined();
@@ -68,8 +76,8 @@ describe("ApprovalStore", () => {
     // ── Entries (read-only view) ────────────────────────────────────────────
 
     it("provides read-only entries map", () => {
-        store.add("id-1", 100, sampleInfo);
-        store.add("id-2", 101, sampleInfo);
+        store.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
+        store.add("id-2", "slack", { slackTs: "ts-1" }, sampleInfo);
         const entries = store.entries();
         expect(entries.size).toBe(2);
         expect(entries.has("id-1")).toBe(true);
@@ -81,7 +89,7 @@ describe("ApprovalStore", () => {
         vi.useFakeTimers();
         const shortStore = new ApprovalStore(1000); // 1s TTL
 
-        shortStore.add("id-1", 100, sampleInfo);
+        shortStore.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
 
         // Not stale yet
         expect(shortStore.cleanStale()).toBe(0);
@@ -101,13 +109,13 @@ describe("ApprovalStore", () => {
         const onExpired = vi.fn();
         const shortStore = new ApprovalStore(1000, undefined, onExpired);
 
-        shortStore.add("id-1", 100, sampleInfo);
+        shortStore.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
         vi.advanceTimersByTime(1500);
         shortStore.cleanStale();
 
         expect(onExpired).toHaveBeenCalledTimes(1);
         expect(onExpired).toHaveBeenCalledWith(
-            expect.objectContaining({ messageId: 100 }),
+            expect.objectContaining({ channel: "telegram", messageId: 100 }),
         );
 
         shortStore.stop();
@@ -121,7 +129,7 @@ describe("ApprovalStore", () => {
         });
         const shortStore = new ApprovalStore(1000, undefined, onExpired);
 
-        shortStore.add("id-1", 100, sampleInfo);
+        shortStore.add("id-1", "telegram", { messageId: 100 }, sampleInfo);
         vi.advanceTimersByTime(1500);
 
         // Should not throw

@@ -26,11 +26,20 @@ export interface ApprovalInfo {
 }
 
 /**
+ * Which channel the approval was sent on.
+ */
+export type ApprovalChannel = "telegram" | "slack";
+
+/**
  * A tracked approval that was sent with inline buttons.
  */
 export interface SentApproval {
-  /** Telegram message_id of our formatted message */
+  /** Which channel sent this approval */
+  channel: ApprovalChannel;
+  /** Telegram message_id (set when channel is "telegram") */
   messageId: number;
+  /** Slack message timestamp (set when channel is "slack") */
+  slackTs: string;
   /** Parsed approval details */
   info: ApprovalInfo;
   /** Unix timestamp (ms) when the message was sent */
@@ -60,6 +69,10 @@ export interface PluginConfig {
   chatId?: string;
   /** Telegram bot token (optional — falls back to channels.telegram.token) */
   botToken?: string;
+  /** Slack bot OAuth token (optional — falls back to channels.slack.token) */
+  slackBotToken?: string;
+  /** Slack channel/DM ID to send approval buttons to (optional — falls back to channels.slack config) */
+  slackChannelId?: string;
   /** Stale approval timeout in minutes (default: 10) */
   staleMins?: number;
   /** Enable verbose diagnostic logging (default: false) */
@@ -67,11 +80,27 @@ export interface PluginConfig {
 }
 
 /**
+ * Resolved Telegram configuration.
+ */
+export interface ResolvedTelegramConfig {
+  chatId: string;
+  botToken: string;
+}
+
+/**
+ * Resolved Slack configuration.
+ */
+export interface ResolvedSlackConfig {
+  channelId: string;
+  botToken: string;
+}
+
+/**
  * Resolved (validated) configuration with all defaults applied.
  */
 export interface ResolvedConfig {
-  chatId: string;
-  botToken: string;
+  telegram: ResolvedTelegramConfig | null;
+  slack: ResolvedSlackConfig | null;
   staleMins: number;
   verbose: boolean;
 }
@@ -81,8 +110,9 @@ export interface ResolvedConfig {
  */
 export interface HealthCheck {
   ok: boolean;
-  config: { chatId: boolean; botToken: boolean };
+  config: { telegramChatId: boolean; telegramToken: boolean; slackToken: boolean; slackChannel: boolean };
   telegram: { reachable: boolean; botUsername?: string; error?: string };
+  slack: { reachable: boolean; teamName?: string; error?: string };
   store: { pending: number; totalProcessed: number };
   uptime: number;
 }

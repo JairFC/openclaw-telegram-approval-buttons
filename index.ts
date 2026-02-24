@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · index.ts (v4.1.0)
+// approval-buttons · index.ts (v5.0.0)
 // Plugin entry point — orchestration only, all logic lives in lib/
 //
-// Adds inline keyboard buttons to exec approval messages in Telegram.
+// Adds inline keyboard/button approval messages to Telegram and Slack.
 // When a user taps a button, OpenClaw processes the /approve command
-// automatically via its callback_query → synthetic text message pipeline.
+// automatically via the channel's callback mechanism.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { PluginConfig } from "./types.js";
@@ -12,6 +12,7 @@ import type { PluginConfig } from "./types.js";
 // ── Modules ─────────────────────────────────────────────────────────────────
 
 import { TelegramApi } from "./lib/telegram-api.js";
+import { SlackApi } from "./lib/slack-api.js";
 import { ApprovalStore } from "./lib/approval-store.js";
 import { parseApprovalText, detectApprovalResult } from "./lib/approval-parser.js";
 import {
@@ -22,6 +23,12 @@ import {
   formatHealthCheck,
 } from "./lib/message-formatter.js";
 import {
+  formatSlackApprovalRequest,
+  formatSlackApprovalResolved,
+  formatSlackApprovalExpired,
+  slackFallbackText,
+} from "./lib/slack-formatter.js";
+import {
   resolveConfig,
   runHealthCheck,
   logStartupDiagnostics,
@@ -30,8 +37,8 @@ import {
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const PLUGIN_VERSION = "4.1.0";
-const TAG = "telegram-approval-buttons";
+const PLUGIN_VERSION = "5.0.0";
+const TAG = "approval-buttons";
 
 // ── Plugin registration ─────────────────────────────────────────────────────
 
@@ -43,6 +50,7 @@ function register(api: any): void {
 
   const pluginCfg: PluginConfig = api.pluginConfig ?? {};
   const telegramCfg = api.config?.channels?.telegram ?? {};
+  const slackCfg = api.config?.channels?.slack ?? {};
 
   const config = resolveConfig(
     {
@@ -51,51 +59,74 @@ function register(api: any): void {
         token: telegramCfg.token || telegramCfg.botToken,
         allowFrom: telegramCfg.allowFrom,
       },
+      slackChannelConfig: {
+        token: slackCfg.token,
+        botToken: slackCfg.botToken,
+        allowFrom: slackCfg.allowFrom,
+      },
       env: {
         TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
         TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
+        SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
+        SLACK_CHANNEL_ID: process.env.SLACK_CHANNEL_ID,
       },
     },
     log,
   );
 
   if (!config) {
-    log.warn(`[${TAG}] v${PLUGIN_VERSION} loaded (DISABLED — missing config)`);
+    log.warn(`[${TAG}] v${PLUGIN_VERSION} loaded (DISABLED — no channels configured)`);
     return;
   }
 
   logStartupDiagnostics(config, log);
 
-  // ─── 2. Initialize modules ───────────────────────────────────────────
+  // ─── 2. Initialize API clients ────────────────────────────────────────
 
-  const tg = new TelegramApi(config.botToken, config.verbose ? log : undefined);
+  const tg = config.telegram
+    ? new TelegramApi(config.telegram.botToken, config.verbose ? log : undefined)
+    : null;
+
+  const slack = config.slack
+    ? new SlackApi(config.slack.botToken, config.verbose ? log : undefined)
+    : null;
+
+  // ─── 3. Initialize store with expiry handler ──────────────────────────
 
   const store = new ApprovalStore(
     config.staleMins * 60_000,
     config.verbose ? log : undefined,
-    // onExpired: edit the Telegram message to show "expired"
+    // onExpired: edit the message to show "expired"
     (entry) => {
-      tg.editMessageText(
-        config.chatId,
-        entry.messageId,
-        formatApprovalExpired(entry.info),
-      ).catch(() => { });
+      if (entry.channel === "telegram" && tg && config.telegram) {
+        tg.editMessageText(
+          config.telegram.chatId,
+          entry.messageId,
+          formatApprovalExpired(entry.info),
+        ).catch(() => {});
+      } else if (entry.channel === "slack" && slack && config.slack) {
+        slack.updateMessage(
+          config.slack.channelId,
+          entry.slackTs,
+          "Exec Approval Expired",
+          formatSlackApprovalExpired(entry.info),
+        ).catch(() => {});
+      }
     },
   );
 
-  // ─── 3. Register background service (cleanup timer) ──────────────────
+  // ─── 4. Register background service (cleanup timer) ──────────────────
 
   api.registerService({
     id: `${TAG}-cleanup`,
     start: () => {
       store.start();
-      // Non-blocking connectivity check
-      runStartupChecks(tg, log).catch(() => { });
+      runStartupChecks(tg, slack, log).catch(() => {});
     },
     stop: () => store.stop(),
   });
 
-  // ─── 4. Register /approvalstatus command ─────────────────────────────
+  // ─── 5. Register /approvalstatus command ─────────────────────────────
 
   api.registerCommand({
     name: "approvalstatus",
@@ -103,12 +134,12 @@ function register(api: any): void {
     acceptsArgs: false,
     requireAuth: true,
     handler: async () => {
-      const health = await runHealthCheck(config, tg, store, startedAt);
+      const health = await runHealthCheck(config, tg, slack, store, startedAt);
       return { text: formatHealthCheck(health) };
     },
   });
 
-  // ─── 5. Register message_sending hook ────────────────────────────────
+  // ─── 6. Register message_sending hook ────────────────────────────────
 
   api.on(
     "message_sending",
@@ -116,78 +147,128 @@ function register(api: any): void {
       event: { to: string; content: string; metadata?: Record<string, unknown> },
       ctx: { channelId: string; accountId?: string },
     ) => {
-      // Only intercept Telegram messages
-      if (ctx.channelId !== "telegram") return;
-
-      // ── 5a. Check for approval resolution ───────────────────────────
-      const resolution = detectApprovalResult(event.content, store.entries());
-      if (resolution) {
-        const entry = store.resolve(resolution.id);
-        if (entry) {
-          log.info(
-            `[${TAG}] resolved ${resolution.id.slice(0, 8)}… → ${resolution.action}`,
-          );
-          const edited = await tg.editMessageText(
-            config.chatId,
-            entry.messageId,
-            formatApprovalResolved(entry.info, resolution.action),
-          );
-          if (edited && config.verbose) {
-            log.info(`[${TAG}] edited msg=${entry.messageId}`);
-          }
-        }
-        // Don't cancel — let resolution messages pass through
-        return;
+      // ── Telegram ──────────────────────────────────────────────────
+      if (ctx.channelId === "telegram" && tg && config.telegram) {
+        return handleTelegram(event, config.telegram.chatId, tg, store, log);
       }
 
-      // ── 5b. Check for new approval request ─────────────────────────
-      const info = parseApprovalText(event.content);
-      if (!info) return;
-
-      // Duplicate guard
-      if (store.has(info.id)) {
-        if (config.verbose) {
-          log.info(`[${TAG}] skipping duplicate ${info.id.slice(0, 8)}…`);
-        }
-        return { cancel: true };
+      // ── Slack ─────────────────────────────────────────────────────
+      if (ctx.channelId === "slack" && slack && config.slack) {
+        return handleSlack(event, config.slack.channelId, slack, store, log);
       }
-
-      log.info(`[${TAG}] intercepting ${info.id.slice(0, 8)}…`);
-
-      // Send formatted message with inline buttons
-      const messageId = await tg.sendMessage(
-        config.chatId,
-        formatApprovalRequest(info),
-        buildApprovalKeyboard(info.id),
-      );
-
-      if (messageId === null) {
-        log.warn(`[${TAG}] send failed for ${info.id.slice(0, 8)}… — falling back to plain text`);
-        // Don't cancel: let the plain-text message through as fallback
-        return;
-      }
-
-      // Track it
-      store.add(info.id, messageId, info);
-      log.info(`[${TAG}] sent buttons for ${info.id.slice(0, 8)}… (msg=${messageId})`);
-
-      // Cancel the original plain-text message
-      return { cancel: true };
     },
   );
 
   // ─── Done ─────────────────────────────────────────────────────────────
 
-  log.info(`[${TAG}] v${PLUGIN_VERSION} loaded ✓`);
+  const channels = [config.telegram && "Telegram", config.slack && "Slack"]
+    .filter(Boolean)
+    .join(" + ");
+  log.info(`[${TAG}] v${PLUGIN_VERSION} loaded ✓ (${channels})`);
+}
+
+// ─── Channel handlers ───────────────────────────────────────────────────────
+
+async function handleTelegram(
+  event: { content: string },
+  chatId: string,
+  tg: TelegramApi,
+  store: ApprovalStore,
+  log: any,
+): Promise<{ cancel: true } | void> {
+  // Check for approval resolution
+  const resolution = detectApprovalResult(event.content, store.entries());
+  if (resolution) {
+    const entry = store.resolve(resolution.id);
+    if (entry && entry.channel === "telegram") {
+      log.info(`[${TAG}] telegram resolved ${resolution.id.slice(0, 8)}… → ${resolution.action}`);
+      await tg.editMessageText(
+        chatId,
+        entry.messageId,
+        formatApprovalResolved(entry.info, resolution.action),
+      );
+    }
+    return;
+  }
+
+  // Check for new approval request
+  const info = parseApprovalText(event.content);
+  if (!info) return;
+
+  if (store.has(info.id)) return { cancel: true };
+
+  log.info(`[${TAG}] telegram intercepting ${info.id.slice(0, 8)}…`);
+
+  const messageId = await tg.sendMessage(
+    chatId,
+    formatApprovalRequest(info),
+    buildApprovalKeyboard(info.id),
+  );
+
+  if (messageId === null) {
+    log.warn(`[${TAG}] telegram send failed for ${info.id.slice(0, 8)}… — falling back`);
+    return;
+  }
+
+  store.add(info.id, "telegram", { messageId }, info);
+  log.info(`[${TAG}] telegram sent buttons for ${info.id.slice(0, 8)}… (msg=${messageId})`);
+  return { cancel: true };
+}
+
+async function handleSlack(
+  event: { content: string },
+  channelId: string,
+  slackApi: SlackApi,
+  store: ApprovalStore,
+  log: any,
+): Promise<{ cancel: true } | void> {
+  // Check for approval resolution
+  const resolution = detectApprovalResult(event.content, store.entries());
+  if (resolution) {
+    const entry = store.resolve(resolution.id);
+    if (entry && entry.channel === "slack") {
+      log.info(`[${TAG}] slack resolved ${resolution.id.slice(0, 8)}… → ${resolution.action}`);
+      await slackApi.updateMessage(
+        channelId,
+        entry.slackTs,
+        `Exec ${resolution.action}`,
+        formatSlackApprovalResolved(entry.info, resolution.action),
+      );
+    }
+    return;
+  }
+
+  // Check for new approval request
+  const info = parseApprovalText(event.content);
+  if (!info) return;
+
+  if (store.has(info.id)) return { cancel: true };
+
+  log.info(`[${TAG}] slack intercepting ${info.id.slice(0, 8)}…`);
+
+  const ts = await slackApi.postMessage(
+    channelId,
+    slackFallbackText(info),
+    formatSlackApprovalRequest(info),
+  );
+
+  if (ts === null) {
+    log.warn(`[${TAG}] slack send failed for ${info.id.slice(0, 8)}… — falling back`);
+    return;
+  }
+
+  store.add(info.id, "slack", { slackTs: ts }, info);
+  log.info(`[${TAG}] slack sent buttons for ${info.id.slice(0, 8)}… (ts=${ts})`);
+  return { cancel: true };
 }
 
 // ─── Plugin export ──────────────────────────────────────────────────────────
 
 export default {
-  id: "telegram-approval-buttons",
-  name: "Telegram Approval Buttons",
+  id: "approval-buttons",
+  name: "Approval Buttons",
   description:
-    "Adds inline keyboard buttons to exec approval messages in Telegram. " +
+    "Adds inline buttons to exec approval messages in Telegram and Slack. " +
     "Tap to approve/deny without typing commands.",
   version: PLUGIN_VERSION,
   kind: "extension" as const,

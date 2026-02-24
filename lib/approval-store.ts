@@ -3,7 +3,7 @@
 // In-memory store for pending approvals with TTL-based cleanup
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ApprovalAction, ApprovalInfo, Logger, SentApproval } from "../types.js";
+import type { ApprovalChannel, ApprovalInfo, Logger, SentApproval } from "../types.js";
 
 /**
  * Manages the lifecycle of pending approval requests.
@@ -57,9 +57,16 @@ export class ApprovalStore {
   /**
    * Track a newly sent approval message.
    */
-  add(approvalId: string, messageId: number, info: ApprovalInfo): void {
+  add(
+    approvalId: string,
+    channel: ApprovalChannel,
+    ref: { messageId?: number; slackTs?: string },
+    info: ApprovalInfo,
+  ): void {
     this.pending.set(approvalId, {
-      messageId,
+      channel,
+      messageId: ref.messageId ?? 0,
+      slackTs: ref.slackTs ?? "",
       info,
       sentAt: Date.now(),
     });

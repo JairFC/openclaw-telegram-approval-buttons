@@ -1,8 +1,8 @@
 {
-  "id": "telegram-approval-buttons",
-  "name": "Telegram Approval Buttons",
-  "description": "Adds inline keyboard buttons to exec approval messages in Telegram. Tap to approve/deny without typing commands.",
-  "version": "4.1.0",
+  "id": "approval-buttons",
+  "name": "Approval Buttons",
+  "description": "Adds inline buttons to exec approval messages in Telegram and Slack. Tap to approve/deny without typing commands.",
+  "version": "5.0.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -14,6 +14,14 @@
       "botToken": {
         "type": "string",
         "description": "Telegram bot token. Falls back to channels.telegram.token or TELEGRAM_BOT_TOKEN env."
+      },
+      "slackBotToken": {
+        "type": "string",
+        "description": "Slack bot OAuth token. Falls back to channels.slack.token or SLACK_BOT_TOKEN env."
+      },
+      "slackChannelId": {
+        "type": "string",
+        "description": "Slack channel or DM ID for approval buttons. Falls back to channels.slack.allowFrom[0] or SLACK_CHANNEL_ID env."
       },
       "staleMins": {
         "type": "number",
@@ -31,13 +39,25 @@
     "chatId": {
       "label": "Telegram Chat ID",
       "placeholder": "123456789",
-      "help": "Auto-detected from channels.telegram.allowFrom if not set."
+      "help": "Auto-detected from channels.telegram.allowFrom if not set.",
+      "advanced": false
     },
     "botToken": {
-      "label": "Bot Token",
+      "label": "Telegram Bot Token",
       "sensitive": true,
       "placeholder": "Auto-detected from channels.telegram.token",
       "help": "Only needed if different from the main Telegram channel token."
+    },
+    "slackBotToken": {
+      "label": "Slack Bot Token",
+      "sensitive": true,
+      "placeholder": "Auto-detected from channels.slack.token",
+      "help": "Only needed if different from the main Slack channel token."
+    },
+    "slackChannelId": {
+      "label": "Slack Channel/DM ID",
+      "placeholder": "U0123456789 or D0123456789",
+      "help": "Your Slack user ID for DM buttons, or a channel ID. Auto-detected from channels.slack.allowFrom if not set."
     },
     "staleMins": {
       "label": "Stale Timeout (min)",
