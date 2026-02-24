@@ -1,5 +1,5 @@
 {
-  "name": "approval-buttons",
+  "name": "telegram-approval-buttons",
   "version": "5.0.0",
   "description": "Inline buttons for exec approval messages in Telegram and Slack — tap to approve/deny without typing commands",
   "type": "module",
