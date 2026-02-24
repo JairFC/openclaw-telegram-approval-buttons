@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · lib/message-formatter.ts
+// approval-buttons · lib/message-formatter.ts
 // HTML message formatting for Telegram (approval requests & resolutions)
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · lib/telegram-api.ts
+// approval-buttons · lib/telegram-api.ts
 // Isolated Telegram Bot API wrapper — only depends on fetch (Node built-in)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export class TelegramApi {
   constructor(
     private readonly token: string,
     private readonly log?: Logger,
-  ) {}
+  ) { }
 
   // ── Connectivity ────────────────────────────────────────────────────────
 

@@ -102,8 +102,10 @@ Then send `/approvalstatus` in your Telegram chat. You should see:
 ```
 🟢 Approval Buttons Status
 
-Config: chatId=✓ · token=✓
-Telegram: ✓ connected (@your_bot)
+Telegram: chatId=✓ · token=✓
+  ✓ connected (@your_bot)
+Slack: not configured
+
 Pending: 0 · Processed: 0
 Uptime: 1m
 ```

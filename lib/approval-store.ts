@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · lib/approval-store.ts
+// approval-buttons · lib/approval-store.ts
 // In-memory store for pending approvals with TTL-based cleanup
 // ─────────────────────────────────────────────────────────────────────────────
 
