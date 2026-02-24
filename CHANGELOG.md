@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-02-24
+
+### ⚠️ Breaking Changes
+
+- **Plugin ID renamed**: `telegram-approval-buttons` → `approval-buttons`
+
+  If you're upgrading from v4.x, update your `~/.openclaw/openclaw.json`:
+
+  ```diff
+  "plugins": {
+    "entries": {
+  -   "telegram-approval-buttons": {
+  +   "approval-buttons": {
+        "enabled": true,
+        ...
+      }
+    }
+  }
+  ```
+
+  Then restart: `openclaw gateway restart`
+
+### Added
+- **Slack inline button support** — approval buttons now work in Slack via Block Kit interactive messages
+- New files: `lib/slack-api.ts`, `lib/slack-formatter.ts`, `tests/slack-formatter.test.ts`
+- Auto-detects Slack credentials from `channels.slack` config or `SLACK_BOT_TOKEN` / `SLACK_CHANNEL_ID` env vars
+- `/approvalstatus` now shows both Telegram and Slack connectivity
+- Multi-channel architecture: either or both channels can be independently enabled
+
+### Changed
+- **Cleaner approval messages** — removed verbose internal fields (Security, Ask, Host) from both Telegram and Slack formats. Messages now focus on: command, CWD, agent, and expiry
+- Plugin ID and TAG shortened to `approval-buttons`
+
+### Contributors
+
+Thanks to [@sjkey](https://github.com/sjkey) for contributing Slack support and the message simplification improvements in this release 🙏
+
 ## [4.1.0] - 2026-02-20
 
 ### Changed
