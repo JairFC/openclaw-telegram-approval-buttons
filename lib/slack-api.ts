@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · lib/slack-api.ts
+// telegram-approval-buttons · lib/slack-api.ts
 // Isolated Slack Web API wrapper — only depends on fetch (Node built-in)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ export class SlackApi {
   constructor(
     private readonly token: string,
     private readonly log?: Logger,
-  ) {}
+  ) { }
 
   // ── Connectivity ────────────────────────────────────────────────────────
 

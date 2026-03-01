@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · types.ts
+// telegram-approval-buttons · types.ts
 // Shared TypeScript interfaces for the plugin
 // ─────────────────────────────────────────────────────────────────────────────
 

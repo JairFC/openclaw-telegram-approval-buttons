@@ -75,7 +75,7 @@ Open your `~/.openclaw/openclaw.json` and add two things:
   },
   "plugins": {
     "entries": {
-      "approval-buttons": {
+      "telegram-approval-buttons": {
         "enabled": true,
         "config": {
           "botToken": "<your_bot_token>",
@@ -110,7 +110,7 @@ Pending: 0 · Processed: 0
 Uptime: 1m
 ```
 
-> ⚠️ **If you see `DISABLED — missing config`**, the plugin can't find your bot token or chat ID. Double-check that `botToken` and `chatId` are set in `plugins.entries.approval-buttons.config` in your `~/.openclaw/openclaw.json`.
+> ⚠️ **If you see `DISABLED — missing config`**, the plugin can't find your bot token or chat ID. Double-check that `botToken` and `chatId` are set in `plugins.entries.telegram-approval-buttons.config` in your `~/.openclaw/openclaw.json`.
 
 **That's it!** Next time the AI triggers an `exec` approval, you'll get inline buttons instead of text.
 
@@ -162,7 +162,7 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 {
   "plugins": {
     "entries": {
-      "approval-buttons": {
+      "telegram-approval-buttons": {
         "enabled": true,
         "config": {
           "chatId": "123456789",          // Telegram chat ID
@@ -202,36 +202,17 @@ A: Yes, but the bot needs to be an admin or it needs permission to edit its own 
 
 | Problem | Fix |
 |---------|-----|
-| `DISABLED — missing config` in logs | Add `botToken` and `chatId` to `plugins.entries.approval-buttons.config` in your `~/.openclaw/openclaw.json`. See Step 2. |
-| `plugin not found: telegram-approval-buttons` | You upgraded from v4.x. Rename the key in your config from `telegram-approval-buttons` to `approval-buttons`. See [Upgrading from v4.x](#upgrading-from-v4x). |
+| `DISABLED — missing config` in logs | Add `botToken` and `chatId` to `plugins.entries.telegram-approval-buttons.config` in your `~/.openclaw/openclaw.json`. See Step 2. |
 | Still getting old text approvals | Your `approvals.exec` config must target Telegram. See Step 2. |
 | `/approvalstatus` says "unknown command" | Plugin didn't load. Run `openclaw plugins install telegram-approval-buttons` and restart the gateway. |
 | No buttons appear | Check `tools.exec.ask` is not `"off"`. Run `/approvalstatus` to check config. |
 | Buttons show but nothing happens | Bot needs message editing permission. Use a private chat or make bot admin. |
 | Buttons say "expired" | Approval timed out before you tapped. Adjust `staleMins` if needed. |
 
-## Upgrading from v4.x
-
-v5.0.0 renamed the plugin ID from `telegram-approval-buttons` to `approval-buttons`. Update your `~/.openclaw/openclaw.json`:
-
-```diff
-"plugins": {
-  "entries": {
--   "telegram-approval-buttons": {
-+   "approval-buttons": {
-      "enabled": true,
-      ...
-    }
-  }
-}
-```
-
-Then restart: `openclaw gateway restart`
-
 ## Architecture
 
 ```
-approval-buttons/
+telegram-approval-buttons/
 ├── index.ts                  # Entry point — orchestration only
 ├── types.ts                  # Shared TypeScript interfaces
 ├── lib/

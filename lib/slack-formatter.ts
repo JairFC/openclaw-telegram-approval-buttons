@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · lib/slack-formatter.ts
+// telegram-approval-buttons · lib/slack-formatter.ts
 // Block Kit message formatting for Slack (approval requests & resolutions)
 // ─────────────────────────────────────────────────────────────────────────────
 

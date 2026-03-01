@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · lib/approval-parser.ts
+// telegram-approval-buttons · lib/approval-parser.ts
 // Parse OpenClaw's plain-text exec approval format into structured data
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · lib/telegram-api.ts
+// telegram-approval-buttons · lib/telegram-api.ts
 // Isolated Telegram Bot API wrapper — only depends on fetch (Node built-in)
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · lib/diagnostics.ts
+// telegram-approval-buttons · lib/diagnostics.ts
 // Self-diagnostics: config validation, connectivity check, auto-repair
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -201,7 +201,7 @@ export function logStartupDiagnostics(
 
   log.info(
     `[diagnostics] Config OK → ${channels.join(", ")}, ` +
-      `staleMins=${config.staleMins}, verbose=${config.verbose}`,
+    `staleMins=${config.staleMins}, verbose=${config.verbose}`,
   );
 }
 

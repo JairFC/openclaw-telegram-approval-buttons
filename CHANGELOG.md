@@ -5,27 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2026-03-01
+
+### Fixed
+- **Reverted plugin ID to `telegram-approval-buttons`** — v5.0.0 renamed it to `approval-buttons`, causing a config warning on every startup. The plugin ID now matches the npm package name again. No config changes needed for users upgrading from v4.x.
+- Normalized all file headers to use consistent naming
+
 ## [5.0.0] - 2026-02-24
-
-### ⚠️ Breaking Changes
-
-- **Plugin ID renamed**: `telegram-approval-buttons` → `approval-buttons`
-
-  If you're upgrading from v4.x, update your `~/.openclaw/openclaw.json`:
-
-  ```diff
-  "plugins": {
-    "entries": {
-  -   "telegram-approval-buttons": {
-  +   "approval-buttons": {
-        "enabled": true,
-        ...
-      }
-    }
-  }
-  ```
-
-  Then restart: `openclaw gateway restart`
 
 ### Added
 - **Slack inline button support** — approval buttons now work in Slack via Block Kit interactive messages
@@ -36,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Cleaner approval messages** — removed verbose internal fields (Security, Ask, Host) from both Telegram and Slack formats. Messages now focus on: command, CWD, agent, and expiry
-- Plugin ID and TAG shortened to `approval-buttons`
 
 ### Contributors
 

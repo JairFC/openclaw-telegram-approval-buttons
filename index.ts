@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// approval-buttons · index.ts (v5.0.0)
+// telegram-approval-buttons · index.ts (v5.0.1)
 // Plugin entry point — orchestration only, all logic lives in lib/
 //
 // Adds inline keyboard/button approval messages to Telegram and Slack.
@@ -37,8 +37,8 @@ import {
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const PLUGIN_VERSION = "5.0.0";
-const TAG = "approval-buttons";
+const PLUGIN_VERSION = "5.0.1";
+const TAG = "telegram-approval-buttons";
 
 // ── Plugin registration ─────────────────────────────────────────────────────
 
@@ -103,14 +103,14 @@ function register(api: any): void {
           config.telegram.chatId,
           entry.messageId,
           formatApprovalExpired(entry.info),
-        ).catch(() => {});
+        ).catch(() => { });
       } else if (entry.channel === "slack" && slack && config.slack) {
         slack.updateMessage(
           config.slack.channelId,
           entry.slackTs,
           "Exec Approval Expired",
           formatSlackApprovalExpired(entry.info),
-        ).catch(() => {});
+        ).catch(() => { });
       }
     },
   );
@@ -121,7 +121,7 @@ function register(api: any): void {
     id: `${TAG}-cleanup`,
     start: () => {
       store.start();
-      runStartupChecks(tg, slack, log).catch(() => {});
+      runStartupChecks(tg, slack, log).catch(() => { });
     },
     stop: () => store.stop(),
   });
@@ -265,8 +265,8 @@ async function handleSlack(
 // ─── Plugin export ──────────────────────────────────────────────────────────
 
 export default {
-  id: "approval-buttons",
-  name: "Approval Buttons",
+  id: "telegram-approval-buttons",
+  name: "Telegram Approval Buttons",
   description:
     "Adds inline buttons to exec approval messages in Telegram and Slack. " +
     "Tap to approve/deny without typing commands.",
