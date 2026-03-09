@@ -67,6 +67,8 @@ export interface ApprovalResolution {
 export interface PluginConfig {
   /** Telegram chat ID to send approval buttons to */
   chatId?: string;
+  /** UI language for user-facing text */
+  language?: "en" | "zh-CN";
   /** Telegram bot token (optional — falls back to channels.telegram.token) */
   botToken?: string;
   /** Proxy config for Telegram Bot API requests (optional — falls back to channels.telegram.proxy) */
@@ -112,6 +114,7 @@ export interface ResolvedConfig {
   slack: ResolvedSlackConfig | null;
   staleMins: number;
   verbose: boolean;
+  language: "en" | "zh-CN";
 }
 
 /**

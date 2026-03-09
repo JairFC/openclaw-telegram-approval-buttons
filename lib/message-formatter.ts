@@ -4,10 +4,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ApprovalAction, ApprovalInfo } from "../types.js";
+import type { LocaleDict } from "../locales/en.js";
 
-// ─── HTML escaping ──────────────────────────────────────────────────────────
-
-/** Escape text for Telegram HTML parse mode. */
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -15,15 +13,10 @@ export function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
-// ─── Approval request format ────────────────────────────────────────────────
-
-/**
- * Format an approval request as a rich HTML message for Telegram.
- */
-export function formatApprovalRequest(info: ApprovalInfo): string {
+export function formatApprovalRequest(info: ApprovalInfo, t: LocaleDict): string {
   const e = escapeHtml;
   return [
-    `🔐 <b>Exec Approval</b>`,
+    `🔐 <b>${t.approval.title}</b>`,
     ``,
     `<pre>${e(info.command)}</pre>`,
     ``,
@@ -33,31 +26,26 @@ export function formatApprovalRequest(info: ApprovalInfo): string {
   ].join("\n");
 }
 
-// ─── Resolved approval format ───────────────────────────────────────────────
-
 const ACTION_ICONS: Record<ApprovalAction, string> = {
   "allow-once": "✅",
   "allow-always": "🔏",
   deny: "❌",
 };
 
-const ACTION_LABELS: Record<ApprovalAction, string> = {
-  "allow-once": "Allowed (once)",
-  "allow-always": "Always allowed",
-  deny: "Denied",
-};
+function actionLabel(action: ApprovalAction, t: LocaleDict): string {
+  if (action === "allow-once") return t.approval.allowedOnce;
+  if (action === "allow-always") return t.approval.alwaysAllowed;
+  return t.approval.denied;
+}
 
-/**
- * Format a resolved approval (post-decision) as an HTML message.
- * Buttons are removed and the header shows the resolution.
- */
 export function formatApprovalResolved(
   info: ApprovalInfo,
   action: ApprovalAction,
+  t: LocaleDict,
 ): string {
   const e = escapeHtml;
   const icon = ACTION_ICONS[action] ?? "✅";
-  const label = ACTION_LABELS[action] ?? action;
+  const label = actionLabel(action, t);
 
   return [
     `${icon} <b>${label}</b>`,
@@ -68,37 +56,22 @@ export function formatApprovalResolved(
   ].join("\n");
 }
 
-// ─── Inline keyboard ────────────────────────────────────────────────────────
-
-/**
- * Build the inline keyboard markup for an approval request.
- *
- * Each button uses `/approve <id> <action>` as callback_data.
- * OpenClaw's Telegram integration converts unknown callback_data
- * into synthetic text messages, so these are processed as commands
- * automatically — no webhook needed.
- */
-export function buildApprovalKeyboard(approvalId: string): object {
+export function buildApprovalKeyboard(approvalId: string, t: LocaleDict): object {
   return {
     inline_keyboard: [
       [
-        { text: "✅ Allow Once", callback_data: `/approve ${approvalId} allow-once` },
-        { text: "🔏 Always", callback_data: `/approve ${approvalId} allow-always` },
+        { text: `✅ ${t.approval.allowOnce}`, callback_data: `/approve ${approvalId} allow-once` },
+        { text: `🔏 ${t.approval.allowAlways}`, callback_data: `/approve ${approvalId} allow-always` },
       ],
-      [{ text: "❌ Deny", callback_data: `/approve ${approvalId} deny` }],
+      [{ text: `❌ ${t.approval.deny}`, callback_data: `/approve ${approvalId} deny` }],
     ],
   };
 }
 
-// ─── Stale approval format ──────────────────────────────────────────────────
-
-/**
- * Format a stale/expired approval message.
- */
-export function formatApprovalExpired(info: ApprovalInfo): string {
+export function formatApprovalExpired(info: ApprovalInfo, t: LocaleDict): string {
   const e = escapeHtml;
   return [
-    `⏰ <b>Expired</b>`,
+    `⏰ <b>${t.approval.expired}</b>`,
     ``,
     `<pre>${e(info.command)}</pre>`,
     ``,
@@ -106,11 +79,6 @@ export function formatApprovalExpired(info: ApprovalInfo): string {
   ].join("\n");
 }
 
-// ─── Health / diagnostics format ────────────────────────────────────────────
-
-/**
- * Format a health check result for display.
- */
 export function formatHealthCheck(health: {
   ok: boolean;
   config: { telegramChatId: boolean; telegramToken: boolean; slackToken: boolean; slackChannel: boolean };
@@ -118,44 +86,37 @@ export function formatHealthCheck(health: {
   slack: { reachable: boolean; teamName?: string; error?: string };
   store: { pending: number; totalProcessed: number };
   uptime: number;
-}): string {
+}, t: LocaleDict): string {
   const uptimeMin = Math.floor(health.uptime / 60_000);
   const lines = [
-    `${health.ok ? "🟢" : "🔴"} Approval Buttons Status`,
+    health.ok ? t.health.titleOk : t.health.titleError,
     ``,
   ];
 
-  // Telegram status
   const tgConfigured = health.config.telegramChatId && health.config.telegramToken;
   if (tgConfigured) {
-    lines.push(`Telegram: chatId=${health.config.telegramChatId ? "✓" : "✗"} · token=${health.config.telegramToken ? "✓" : "✗"}`);
+    lines.push(t.health.telegramLine(health.config.telegramChatId, health.config.telegramToken));
     if (health.telegram.reachable) {
-      lines.push(`  ✓ connected (@${health.telegram.botUsername ?? "?"})`);
+      lines.push(t.health.connectedTelegram(health.telegram.botUsername ?? "?"));
     } else {
-      lines.push(`  ✗ ${health.telegram.error ?? "unreachable"}`);
+      lines.push(t.health.failed(health.telegram.error ?? "unreachable"));
     }
   } else {
-    lines.push(`Telegram: not configured`);
+    lines.push(t.health.telegramNotConfigured);
   }
 
-  // Slack status
   const slackConfigured = health.config.slackToken && health.config.slackChannel;
   if (slackConfigured) {
-    lines.push(`Slack: token=${health.config.slackToken ? "✓" : "✗"} · channel=${health.config.slackChannel ? "✓" : "✗"}`);
+    lines.push(t.health.slackLine(health.config.slackToken, health.config.slackChannel));
     if (health.slack.reachable) {
-      lines.push(`  ✓ connected (${health.slack.teamName ?? "?"})`);
+      lines.push(t.health.connectedSlack(health.slack.teamName ?? "?"));
     } else {
-      lines.push(`  ✗ ${health.slack.error ?? "unreachable"}`);
+      lines.push(t.health.failed(health.slack.error ?? "unreachable"));
     }
   } else {
-    lines.push(`Slack: not configured`);
+    lines.push(t.health.slackNotConfigured);
   }
 
-  lines.push(
-    ``,
-    `Pending: ${health.store.pending} · Processed: ${health.store.totalProcessed}`,
-    `Uptime: ${uptimeMin}m`,
-  );
-
+  lines.push(``, t.health.pendingProcessed(health.store.pending, health.store.totalProcessed), t.health.uptime(uptimeMin));
   return lines.join("\n");
 }

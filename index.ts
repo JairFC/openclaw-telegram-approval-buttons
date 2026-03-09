@@ -34,6 +34,7 @@ import {
   logStartupDiagnostics,
   runStartupChecks,
 } from "./lib/diagnostics.js";
+import { getLocale } from "./locales/index.js";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ function register(api: any): void {
   }
 
   logStartupDiagnostics(config, log);
+  const t = getLocale(config.language);
 
   // ─── 2. Initialize API clients ────────────────────────────────────────
 
@@ -103,14 +105,14 @@ function register(api: any): void {
         tg.editMessageText(
           config.telegram.chatId,
           entry.messageId,
-          formatApprovalExpired(entry.info),
+          formatApprovalExpired(entry.info, t),
         ).catch(() => { });
       } else if (entry.channel === "slack" && slack && config.slack) {
         slack.updateMessage(
           config.slack.channelId,
           entry.slackTs,
           "Exec Approval Expired",
-          formatSlackApprovalExpired(entry.info),
+          formatSlackApprovalExpired(entry.info, t),
         ).catch(() => { });
       }
     },
@@ -136,7 +138,7 @@ function register(api: any): void {
     requireAuth: true,
     handler: async () => {
       const health = await runHealthCheck(config, tg, slack, store, startedAt);
-      return { text: formatHealthCheck(health) };
+      return { text: formatHealthCheck(health, t) };
     },
   });
 
@@ -150,12 +152,12 @@ function register(api: any): void {
     ) => {
       // ── Telegram ──────────────────────────────────────────────────
       if (ctx.channelId === "telegram" && tg && config.telegram) {
-        return handleTelegram(event, config.telegram.chatId, tg, store, log);
+        return handleTelegram(event, config.telegram.chatId, tg, store, log, t);
       }
 
       // ── Slack ─────────────────────────────────────────────────────
       if (ctx.channelId === "slack" && slack && config.slack) {
-        return handleSlack(event, config.slack.channelId, slack, store, log);
+        return handleSlack(event, config.slack.channelId, slack, store, log, t);
       }
     },
   );
@@ -176,6 +178,7 @@ async function handleTelegram(
   tg: TelegramApi,
   store: ApprovalStore,
   log: any,
+  t: ReturnType<typeof getLocale>,
 ): Promise<{ cancel: true } | void> {
   // Check for approval resolution
   const resolution = detectApprovalResult(event.content, store.entries());
@@ -186,7 +189,7 @@ async function handleTelegram(
       await tg.editMessageText(
         chatId,
         entry.messageId,
-        formatApprovalResolved(entry.info, resolution.action),
+        formatApprovalResolved(entry.info, resolution.action, t),
       );
     }
     return;
@@ -202,8 +205,8 @@ async function handleTelegram(
 
   const messageId = await tg.sendMessage(
     chatId,
-    formatApprovalRequest(info),
-    buildApprovalKeyboard(info.id),
+    formatApprovalRequest(info, t),
+    buildApprovalKeyboard(info.id, t),
   );
 
   if (messageId === null) {
@@ -222,6 +225,7 @@ async function handleSlack(
   slackApi: SlackApi,
   store: ApprovalStore,
   log: any,
+  t: ReturnType<typeof getLocale>,
 ): Promise<{ cancel: true } | void> {
   // Check for approval resolution
   const resolution = detectApprovalResult(event.content, store.entries());
@@ -233,7 +237,7 @@ async function handleSlack(
         channelId,
         entry.slackTs,
         `Exec ${resolution.action}`,
-        formatSlackApprovalResolved(entry.info, resolution.action),
+        formatSlackApprovalResolved(entry.info, resolution.action, t),
       );
     }
     return;
@@ -249,8 +253,8 @@ async function handleSlack(
 
   const ts = await slackApi.postMessage(
     channelId,
-    slackFallbackText(info),
-    formatSlackApprovalRequest(info),
+    slackFallbackText(info, t),
+    formatSlackApprovalRequest(info, t),
   );
 
   if (ts === null) {

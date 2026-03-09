@@ -146,8 +146,9 @@ export function resolveConfig(
       : 10;
 
   const verbose = pluginConfig.verbose === true;
+  const language = pluginConfig.language === "zh-CN" ? "zh-CN" : "en";
 
-  return { telegram, slack, staleMins, verbose };
+  return { telegram, slack, staleMins, verbose, language };
 }
 
 // ─── Health check ───────────────────────────────────────────────────────────
