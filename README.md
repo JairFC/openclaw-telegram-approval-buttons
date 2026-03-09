@@ -15,11 +15,11 @@ OpenClaw's Discord has built-in approval buttons. **Telegram and Slack don't** �
 **Features:**
 - ✅ **One-tap approvals** — Allow Once · 🔏 Always · ❌ Deny
 - 💬 **Multi-channel** — works on Telegram (inline keyboard) and Slack (Block Kit buttons)
+- 🌐 **Telegram proxy support** — supports explicit proxy config or inheriting `channels.telegram.proxy`
 - 🔄 **Auto-resolve** — edits the message after decision (removes buttons, shows result)
 - ⏰ **Expiry handling** — stale approvals auto-cleaned and marked as expired
 - 🩺 **Self-diagnostics** — `/approvalstatus` checks health and stats for both channels
 - 🛡️ **Graceful fallback** — if buttons fail, the original text goes through
-- 📦 **Zero dependencies** — uses only Node.js built-in `fetch`
 
 ## Quick Start
 
@@ -155,6 +155,7 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 |------------|-----------------------------|------------------------------------|---------------------------|
 | `botToken` | `pluginConfig.botToken`     | `channels.telegram.token`          | `TELEGRAM_BOT_TOKEN`      |
 | `chatId`   | `pluginConfig.chatId`       | `channels.telegram.allowFrom[0]`   | `TELEGRAM_CHAT_ID`        |
+| `proxy`    | `pluginConfig.proxy`        | `channels.telegram.proxy`          | —                         |
 
 ### Advanced options
 
@@ -167,16 +168,94 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
         "config": {
           "chatId": "123456789",          // Telegram chat ID
           "botToken": "123:ABC...",        // Telegram bot token
+          "proxy": {
+            "enabled": true,
+            "url": "http://127.0.0.1:7890",
+            "strict": true,
+            "insecureTls": false
+          },
           "slackBotToken": "xoxb-...",     // Slack bot OAuth token (optional)
           "slackChannelId": "C0123456",    // Slack channel/DM ID (optional)
-          "staleMins": 10,                // Minutes before stale cleanup (default: 10)
-          "verbose": false                // Diagnostic logging (default: false)
+          "staleMins": 10,                   // Minutes before stale cleanup (default: 10)
+          "verbose": false                   // Diagnostic logging (default: false)
         }
       }
     }
   }
 }
 ```
+
+### Telegram proxy examples
+
+**Explicit proxy on the plugin:**
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "chatId": "123456789",
+          "botToken": "123:ABC...",
+          "proxy": {
+            "enabled": true,
+            "url": "http://192.168.0.10:20900",
+            "strict": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Inherit the main Telegram channel proxy automatically:**
+
+```jsonc
+{
+  "channels": {
+    "telegram": {
+      "proxy": "http://192.168.0.10:20900"
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "chatId": "123456789",
+          "botToken": "123:ABC..."
+        }
+      }
+    }
+  }
+}
+```
+
+**If your proxy injects a self-signed TLS chain:**
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "proxy": {
+            "enabled": true,
+            "url": "http://192.168.0.10:20900",
+            "strict": true,
+            "insecureTls": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+> ⚠️ `insecureTls` should only be enabled when your outbound proxy performs TLS interception with a self-signed CA.
 
 ## FAQ
 
@@ -205,6 +284,8 @@ A: Yes, but the bot needs to be an admin or it needs permission to edit its own 
 | `DISABLED — missing config` in logs | Add `botToken` and `chatId` to `plugins.entries.telegram-approval-buttons.config` in your `~/.openclaw/openclaw.json`. See Step 2. |
 | Still getting old text approvals | Your `approvals.exec` config must target Telegram. See Step 2. |
 | `/approvalstatus` says "unknown command" | Plugin didn't load. Run `openclaw plugins install telegram-approval-buttons` and restart the gateway. |
+| `connect ETIMEDOUT ...:443` | Telegram likely requires a proxy from your environment. Set `plugins.entries.telegram-approval-buttons.config.proxy` or configure `channels.telegram.proxy` for inheritance. |
+| TLS/self-signed certificate errors through proxy | If your proxy intercepts TLS, set `proxy.insecureTls: true` explicitly on the plugin config. |
 | No buttons appear | Check `tools.exec.ask` is not `"off"`. Run `/approvalstatus` to check config. |
 | Buttons show but nothing happens | Bot needs message editing permission. Use a private chat or make bot admin. |
 | Buttons say "expired" | Approval timed out before you tapped. Adjust `staleMins` if needed. |
