@@ -155,6 +155,8 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 |------------|-----------------------------|------------------------------------|---------------------------|
 | `botToken` | `pluginConfig.botToken`     | `channels.telegram.token`          | `TELEGRAM_BOT_TOKEN`      |
 | `chatId`   | `pluginConfig.chatId`       | `channels.telegram.allowFrom[0]`   | `TELEGRAM_CHAT_ID`        |
+| `proxy`    | `pluginConfig.proxy`        | `channels.telegram.proxy`          | —                         |
+| `language` | `pluginConfig.language`     | —                                  | —                         |
 
 ### Advanced options
 
@@ -167,6 +169,13 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
         "config": {
           "chatId": "123456789",          // Telegram chat ID
           "botToken": "123:ABC...",        // Telegram bot token
+          "language": "zh-CN",             // UI language: en | zh-CN
+          "proxy": {
+            "enabled": true,
+            "url": "http://127.0.0.1:7890",
+            "strict": true,
+            "insecureTls": false
+          },
           "slackBotToken": "xoxb-...",     // Slack bot OAuth token (optional)
           "slackChannelId": "C0123456",    // Slack channel/DM ID (optional)
           "staleMins": 10,                // Minutes before stale cleanup (default: 10)
@@ -177,6 +186,104 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
   }
 }
 ```
+
+### Telegram proxy examples
+
+**Explicit proxy on the plugin:**
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "chatId": "123456789",
+          "botToken": "123:ABC...",
+          "proxy": {
+            "enabled": true,
+            "url": "http://192.168.0.10:20900",
+            "strict": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Inherit the main Telegram channel proxy automatically:**
+
+```jsonc
+{
+  "channels": {
+    "telegram": {
+      "proxy": "http://192.168.0.10:20900"
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "chatId": "123456789",
+          "botToken": "123:ABC..."
+        }
+      }
+    }
+  }
+}
+```
+
+**If your proxy injects a self-signed TLS chain:**
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "proxy": {
+            "enabled": true,
+            "url": "http://192.168.0.10:20900",
+            "strict": true,
+            "insecureTls": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+> ⚠️ `insecureTls` should only be enabled when your outbound proxy performs TLS interception with a self-signed CA.
+
+### Language packs
+
+The plugin supports a language pack based UI with these values:
+
+- `en`
+- `zh-CN`
+
+Example:
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "telegram-approval-buttons": {
+        "enabled": true,
+        "config": {
+          "language": "zh-CN"
+        }
+      }
+    }
+  }
+}
+```
+
+When omitted or invalid, the plugin falls back to `en`.
 
 ## FAQ
 
@@ -215,8 +322,10 @@ A: Yes, but the bot needs to be an admin or it needs permission to edit its own 
 telegram-approval-buttons/
 ├── index.ts                  # Entry point — orchestration only
 ├── types.ts                  # Shared TypeScript interfaces
+├── locales/                  # Language packs (en / zh-CN)
 ├── lib/
 │   ├── telegram-api.ts       # Telegram Bot API client
+│   ├── telegram-transport.ts # Telegram HTTP transport with proxy support
 │   ├── slack-api.ts          # Slack Web API client
 │   ├── approval-parser.ts    # Parse OpenClaw approval text format
 │   ├── message-formatter.ts  # HTML formatting for Telegram messages

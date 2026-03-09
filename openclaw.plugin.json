@@ -11,6 +11,11 @@
         "type": "string",
         "description": "Telegram chat ID where approval buttons are sent. Falls back to channels.telegram.allowFrom[0]."
       },
+      "language": {
+        "type": "string",
+        "enum": ["en", "zh-CN"],
+        "description": "UI language for user-facing plugin text. Defaults to en."
+      },
       "botToken": {
         "type": "string",
         "description": "Telegram bot token. Falls back to channels.telegram.token or TELEGRAM_BOT_TOKEN env."
@@ -40,6 +45,12 @@
       "label": "Telegram Chat ID",
       "placeholder": "123456789",
       "help": "Auto-detected from channels.telegram.allowFrom if not set.",
+      "advanced": false
+    },
+    "language": {
+      "label": "Language",
+      "placeholder": "en",
+      "help": "User-facing language for approval messages and health status.",
       "advanced": false
     },
     "botToken": {
