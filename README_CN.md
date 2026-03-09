@@ -2,45 +2,43 @@
 
 # 🔐 OpenClaw 审批按钮插件
 
-> 在 **Telegram** 和 **Slack** 中一键处理 `exec` 审批 —— 不再手动输入 `/approve <uuid> allow-once`。
+> 在 **Telegram** 和 **Slack** 中一键处理 `exec` 审批，不再手动输入冗长的 `/approve <uuid> allow-once`。
 
-## What does this look like?
+## 这是什么？
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/JairFC/openclaw-telegram-approval-buttons/main/docs/banner.png" alt="Plugin workflow: approval request → allowed → health check" />
-</p>
+OpenClaw 在某些渠道里原生支持审批按钮，但 **Telegram 和 Slack 默认并没有这套体验**。没有这个插件时，你通常只能复制并手动输入 `/approve` 命令来放行或拒绝执行请求。
 
-## What does this do?
+这个插件的目标，就是把这些审批请求变成可以直接点击的按钮消息。
 
-OpenClaw's Discord has built-in approval buttons. **Telegram and Slack don't** — you're stuck typing long `/approve` commands. This plugin fixes that for both.
+## 功能特性
 
-**Features:**
-- ✅ **One-tap approvals** — Allow Once · 🔏 Always · ❌ Deny
-- 💬 **Multi-channel** — works on Telegram (inline keyboard) and Slack (Block Kit buttons)
-- 🌐 **Telegram proxy support** — supports explicit proxy config or inheriting `channels.telegram.proxy`
-- 🔄 **Auto-resolve** — edits the message after decision (removes buttons, shows result)
-- ⏰ **Expiry handling** — stale approvals auto-cleaned and marked as expired
-- 🩺 **Self-diagnostics** — `/approvalstatus` checks health and stats for both channels
-- 🛡️ **Graceful fallback** — if buttons fail, the original text goes through
+- ✅ **一键审批** —— 允许一次 / 永久允许 / 拒绝
+- 💬 **多渠道支持** —— 同时支持 Telegram（内联按钮）与 Slack（Block Kit 按钮）
+- 🌐 **Telegram 代理支持** —— 可显式配置代理，也可继承 `channels.telegram.proxy`
+- 🌍 **语言包支持** —— 支持 `en` / `zh-CN`，避免在代码里硬编码文案
+- 🔄 **自动回写结果** —— 用户处理后自动更新原消息状态
+- ⏰ **超时处理** —— 待审批请求过期后自动标记为已过期
+- 🩺 **自检命令** —— `/approvalstatus` 可查看插件健康状态与统计信息
+- 🛡️ **优雅回退** —— 若按钮发送失败，原始文本审批消息仍会正常发送，不会阻断审批流程
 
 ## 快速开始
 
-### Step 1: Install the plugin
+### 第一步：安装插件
 
 ```bash
 openclaw plugins install telegram-approval-buttons
 ```
 
-That's it — OpenClaw downloads it from npm and enables it automatically.
+安装后，OpenClaw 会自动下载并启用该插件。
 
 <details>
-<summary>Alternative: install from source (for development)</summary>
+<summary>开发模式：从源码安装</summary>
 
 ```bash
 git clone https://github.com/JairFC/openclaw-telegram-approval-buttons.git
 ```
 
-Then add the path manually to your `openclaw.json`:
+然后在 `openclaw.json` 中手动加载：
 
 ```jsonc
 {
@@ -54,12 +52,12 @@ Then add the path manually to your `openclaw.json`:
 
 </details>
 
-### Step 2: Configure approvals and plugin
+### 第二步：配置审批与插件
 
-Open your `~/.openclaw/openclaw.json` and add two things:
+打开 `~/.openclaw/openclaw.json`，至少配置两部分：
 
-1. **Exec approvals targeting Telegram** — without this, approvals stay as plain text
-2. **Plugin config with your bot token and chat ID** — the plugin needs these to send buttons
+1. **Exec 审批目标指向 Telegram** —— 否则审批仍然只会以纯文本形式出现
+2. **插件配置 botToken / chatId** —— 插件需要这些信息来发送按钮消息
 
 ```jsonc
 {
@@ -70,7 +68,7 @@ Open your `~/.openclaw/openclaw.json` and add two things:
       "targets": [
         {
           "channel": "telegram",
-          "to": "<your_telegram_chat_id>"
+          "to": "<你的 Telegram chat id>"
         }
       ]
     }
@@ -80,8 +78,8 @@ Open your `~/.openclaw/openclaw.json` and add two things:
       "telegram-approval-buttons": {
         "enabled": true,
         "config": {
-          "botToken": "<your_bot_token>",
-          "chatId": "<your_telegram_chat_id>"
+          "botToken": "<你的 bot token>",
+          "chatId": "<你的 Telegram chat id>"
         }
       }
     }
@@ -89,78 +87,79 @@ Open your `~/.openclaw/openclaw.json` and add two things:
 }
 ```
 
-> 💡 **Where to find these values:**
-> - **Bot token** — the token you got from [@BotFather](https://t.me/BotFather) when creating your bot. It's the same token OpenClaw uses for Telegram.
-> - **Chat ID** — your Telegram user ID. Send a message to [@userinfobot](https://t.me/userinfobot) to get it, or check `openclaw logs --follow` after sending a message to your bot.
-
-### Step 3: Restart and verify
+### 第三步：重启并验证
 
 ```bash
 openclaw gateway restart
 ```
 
-Then send `/approvalstatus` in your Telegram chat. You should see:
+然后在 Telegram 会话里发送：
 
-```
-🟢 Approval Buttons Status
-
-Telegram: chatId=✓ · token=✓
-  ✓ connected (@your_bot)
-Slack: not configured
-
-Pending: 0 · Processed: 0
-Uptime: 1m
+```text
+/approvalstatus
 ```
 
-> ⚠️ **If you see `DISABLED — missing config`**, the plugin can't find your bot token or chat ID. Double-check that `botToken` and `chatId` are set in `plugins.entries.telegram-approval-buttons.config` in your `~/.openclaw/openclaw.json`.
+正常情况下，你会看到类似：
 
-**That's it!** Next time the AI triggers an `exec` approval, you'll get inline buttons instead of text.
+```text
+🟢 审批按钮状态
+
+Telegram：chatId=✓ · token=✓
+  ✓ 已连接 (@your_bot)
+Slack：未配置
+
+待处理：0 · 已处理：0
+运行时间：1 分钟
+```
+
+## 如何获取这些配置值？
+
+- **Bot Token**：通过 [@BotFather](https://t.me/BotFather) 创建机器人后获得
+- **Chat ID**：可向 [@userinfobot](https://t.me/userinfobot) 发送消息查看，也可在机器人收到你消息后查看日志
 
 ## 前置条件
 
-- **OpenClaw ≥ 2026.2.9** installed and running
-- **Node.js ≥ 20** (uses built-in `fetch`)
-- **Telegram configured** in your `openclaw.json` (bot token + `allowFrom`)
-- **Exec approvals targeting Telegram** — see Step 2 above
+- **OpenClaw ≥ 2026.2.9**
+- **Node.js ≥ 20**
+- 已在 `openclaw.json` 中配置 Telegram 渠道
+- 已启用并正确配置 `approvals.exec`
 
 ## 工作原理
 
-```
+```text
 ┌─────────────┐    message_sending     ┌──────────────────┐
-│  OpenClaw    │ ── approval text ──→  │     Plugin        │
-│  Gateway     │                       │                   │
-│              │   cancel original     │  1. Parse text    │
-│              │ ←──────────────────── │  2. Send buttons  │
-└─────────────┘                        │  3. Track pending │
+│  OpenClaw    │ ── 审批文本消息 ──→   │      插件         │
+│  Gateway     │                       │                  │
+│              │   取消原始消息        │ 1. 解析审批文本   │
+│              │ ←──────────────────── │ 2. 发送按钮消息   │
+└─────────────┘                        │ 3. 跟踪待处理状态 │
                                        └────────┬─────────┘
                                                 │
-                                    Telegram Bot API
+                                       Telegram Bot API / Slack API
                                                 │
                                        ┌────────▼─────────┐
-                                       │   Telegram Chat   │
-                                       │                   │
-                                       │  🔐 Exec Approval │
-                                       │  [✅ Allow] [🔏]  │
-                                       │  [❌ Deny]        │
+                                       │     聊天界面      │
+                                       │   🔐 执行审批      │
+                                       │ [允许] [永久] [拒绝] │
                                        └──────────────────┘
 ```
 
-When you tap a button, OpenClaw converts the `callback_data` into a synthetic text message — **no webhook needed**.
+当你点击按钮时，OpenClaw 会把按钮回调转换成对应的审批命令继续处理，因此**不需要额外 webhook**。
 
-## 配置
+## 配置说明
 
-The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel config. Most setups need zero extra configuration.
+插件支持自动从 Telegram 主通道配置中推断部分参数，但推荐你在插件配置中显式写清楚。
 
 ### 配置解析优先级
 
-| Setting    | Priority 1 (explicit)       | Priority 2 (shared config)         | Priority 3 (env)          |
-|------------|-----------------------------|------------------------------------|---------------------------|
-| `botToken` | `pluginConfig.botToken`     | `channels.telegram.token`          | `TELEGRAM_BOT_TOKEN`      |
-| `chatId`   | `pluginConfig.chatId`       | `channels.telegram.allowFrom[0]`   | `TELEGRAM_CHAT_ID`        |
-| `proxy`    | `pluginConfig.proxy`        | `channels.telegram.proxy`          | —                         |
-| `language` | `pluginConfig.language`     | —                                  | —                         |
+| 配置项 | 优先级 1（显式配置） | 优先级 2（共享配置） | 优先级 3（环境变量） |
+|---|---|---|---|
+| `botToken` | `pluginConfig.botToken` | `channels.telegram.token` | `TELEGRAM_BOT_TOKEN` |
+| `chatId` | `pluginConfig.chatId` | `channels.telegram.allowFrom[0]` | `TELEGRAM_CHAT_ID` |
+| `proxy` | `pluginConfig.proxy` | `channels.telegram.proxy` | — |
+| `language` | `pluginConfig.language` | — | — |
 
-### 高级选项
+## 高级配置示例
 
 ```jsonc
 {
@@ -169,19 +168,19 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
       "telegram-approval-buttons": {
         "enabled": true,
         "config": {
-          "chatId": "123456789",          // Telegram chat ID
-          "botToken": "123:ABC...",        // Telegram bot token
-          "language": "zh-CN",             // UI language: en | zh-CN
+          "chatId": "123456789",
+          "botToken": "123:ABC...",
+          "language": "zh-CN",
           "proxy": {
             "enabled": true,
             "url": "http://127.0.0.1:7890",
             "strict": true,
             "insecureTls": false
           },
-          "slackBotToken": "xoxb-...",     // Slack bot OAuth token (optional)
-          "slackChannelId": "C0123456",    // Slack channel/DM ID (optional)
-          "staleMins": 10,                   // Minutes before stale cleanup (default: 10)
-          "verbose": false                   // Diagnostic logging (default: false)
+          "slackBotToken": "xoxb-...",
+          "slackChannelId": "C0123456",
+          "staleMins": 10,
+          "verbose": false
         }
       }
     }
@@ -189,9 +188,9 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 }
 ```
 
-### Telegram 代理示例
+## Telegram 代理示例
 
-**Explicit proxy on the plugin:**
+### 方案一：在插件中显式配置代理
 
 ```jsonc
 {
@@ -214,7 +213,7 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 }
 ```
 
-**Inherit the main Telegram channel proxy automatically:**
+### 方案二：继承主 Telegram 通道代理
 
 ```jsonc
 {
@@ -237,7 +236,9 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 }
 ```
 
-**If your proxy injects a self-signed TLS chain:**
+### 方案三：代理会注入自签 TLS 证书链
+
+如果你的网络环境里，代理会对 HTTPS 做中间人解密并返回**自签证书链**，你需要显式打开 `insecureTls`：
 
 ```jsonc
 {
@@ -259,16 +260,16 @@ The plugin **auto-detects** `botToken` and `chatId` from your Telegram channel c
 }
 ```
 
-> ⚠️ `insecureTls` should only be enabled when your outbound proxy performs TLS interception with a self-signed CA.
+> ⚠️ `insecureTls` 只应在你明确知道代理会注入自签 TLS 证书时开启。
 
-### 语言包
+## 语言包
 
-The plugin supports a language pack based UI with these values:
+插件支持以下语言值：
 
 - `en`
 - `zh-CN`
 
-Example:
+示例：
 
 ```jsonc
 {
@@ -285,69 +286,95 @@ Example:
 }
 ```
 
-When omitted or invalid, the plugin falls back to `en`.
+当 `language` 缺失或填写非法值时，插件会回退到 `en`。
 
 ## 常见问题
 
-**Q: I installed the plugin but I still get old text approvals.**  
-A: Most likely your `approvals.exec` section is missing or doesn't target Telegram. Make sure you have `"mode": "targets"` with a target pointing to `"channel": "telegram"` — see Step 2 above. Restart the gateway after changing the config.
+### 我安装了插件，但仍然收到旧式纯文本审批
+大概率是 `approvals.exec` 没有正确指向 Telegram。请确认你使用的是：
 
-**Q: I installed the plugin but no buttons appear at all.**  
-A: Make sure `tools.exec.ask` is NOT set to `"off"` in your config. If it's `"off"`, there are no approvals to buttonize. Set it to `"on-miss"` or `"always"`.
+```jsonc
+{
+  "approvals": {
+    "exec": {
+      "enabled": true,
+      "mode": "targets",
+      "targets": [
+        { "channel": "telegram", "to": "<chatId>" }
+      ]
+    }
+  }
+}
+```
 
-**Q: How do I find my Telegram Chat ID?**  
-A: Send `/start` to [@userinfobot](https://t.me/userinfobot) on Telegram — it replies with your ID. Alternatively, check `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending a message to your bot.
+### `/approvalstatus` 显示 unknown command
+说明插件没有成功加载。请重新安装插件并重启网关。
 
-**Q: Do I need to set up a webhook?**  
-A: No! OpenClaw's Telegram integration automatically converts button taps into synthetic text messages. No extra setup needed.
+### Telegram 连接报 `connect ETIMEDOUT ...:443`
+说明当前环境下 Telegram 直连不可用，通常必须配置代理。请设置插件代理，或让插件继承 `channels.telegram.proxy`。
 
-**Q: What happens if the plugin fails to send buttons?**  
-A: The original plain-text approval message goes through normally. The plugin never blocks approvals.
+### 代理环境里出现 TLS/self-signed 错误
+若你的代理会注入自签证书链，请显式设置：
 
-**Q: Does this work in group chats?**  
-A: Yes, but the bot needs to be an admin or it needs permission to edit its own messages.
+```jsonc
+{
+  "proxy": {
+    "insecureTls": true
+  }
+}
+```
+
+### 按钮能发出来，但点击后没反应
+请检查：
+- 机器人是否有编辑自己消息的权限
+- 是否在私聊中测试
+- Slack/Telegram 是否正确处理了按钮回调
+
+### 按钮显示为已过期
+说明审批超时。你可以增加 `staleMins` 的值。
 
 ## 故障排查
 
-| Problem | Fix |
-|---------|-----|
-| `DISABLED — missing config` in logs | Add `botToken` and `chatId` to `plugins.entries.telegram-approval-buttons.config` in your `~/.openclaw/openclaw.json`. See Step 2. |
-| Still getting old text approvals | Your `approvals.exec` config must target Telegram. See Step 2. |
-| `/approvalstatus` says "unknown command" | Plugin didn't load. Run `openclaw plugins install telegram-approval-buttons` and restart the gateway. |
-| `connect ETIMEDOUT ...:443` | Telegram likely requires a proxy from your environment. Set `plugins.entries.telegram-approval-buttons.config.proxy` or configure `channels.telegram.proxy` for inheritance. |
-| TLS/self-signed certificate errors through proxy | If your proxy intercepts TLS, set `proxy.insecureTls: true` explicitly on the plugin config. |
-| No buttons appear | Check `tools.exec.ask` is not `"off"`. Run `/approvalstatus` to check config. |
-| Buttons show but nothing happens | Bot needs message editing permission. Use a private chat or make bot admin. |
-| Buttons say "expired" | Approval timed out before you tapped. Adjust `staleMins` if needed. |
+| 问题 | 处理方法 |
+|---|---|
+| 日志里显示 `DISABLED — missing config` | 检查 `botToken` 与 `chatId` 是否存在 |
+| 还是收到旧式审批文本 | 检查 `approvals.exec` 是否真的指向 Telegram |
+| `/approvalstatus` 没反应 | 检查插件是否已加载，并确认命令路由是否可用 |
+| `connect ETIMEDOUT ...:443` | 说明 Telegram 直连失败，应配置代理 |
+| 代理场景下出现 TLS/self-signed 错误 | 打开 `proxy.insecureTls` |
+| 按钮发出但状态不更新 | 检查机器人编辑消息权限 |
+| 按钮总是过期 | 调大 `staleMins` |
 
-## 架构
+## 项目结构
 
-```
+```text
 telegram-approval-buttons/
-├── index.ts                  # Entry point — orchestration only
-├── types.ts                  # Shared TypeScript interfaces
-├── locales/                  # Language packs (en / zh-CN)
+├── index.ts                  # 插件入口
+├── types.ts                  # 共享类型定义
+├── locales/                  # 语言包（en / zh-CN）
 ├── lib/
-│   ├── telegram-api.ts       # Telegram Bot API client
-│   ├── telegram-transport.ts # Telegram HTTP transport with proxy support
-│   ├── slack-api.ts          # Slack Web API client
-│   ├── approval-parser.ts    # Parse OpenClaw approval text format
-│   ├── message-formatter.ts  # HTML formatting for Telegram messages
-│   ├── slack-formatter.ts    # Block Kit formatting for Slack messages
-│   ├── approval-store.ts     # In-memory pending approval tracker
-│   └── diagnostics.ts        # Config resolution, health checks
-├── openclaw.plugin.json      # Plugin manifest
+│   ├── telegram-api.ts       # Telegram Bot API 封装
+│   ├── telegram-transport.ts # Telegram HTTP 传输层（含代理支持）
+│   ├── slack-api.ts          # Slack API 封装
+│   ├── approval-parser.ts    # 审批文本解析
+│   ├── message-formatter.ts  # Telegram 消息格式化
+│   ├── slack-formatter.ts    # Slack 消息格式化
+│   ├── approval-store.ts     # 待处理审批的内存存储
+│   └── diagnostics.ts        # 配置解析与健康检查
+├── openclaw.plugin.json      # 插件清单
+├── README.md                 # 英文文档
+├── README_CN.md              # 中文文档
 └── package.json
 ```
 
 ## 贡献
 
-Issues and PRs welcome. Each file in `lib/` is self-contained with a single responsibility.
+欢迎提 Issue 和 PR。建议保持每个文件职责单一，方便 review 与维护。
 
 ## 贡献者
 
-- [@JairFC](https://github.com/JairFC) — creator and maintainer
-- [@sjkey](https://github.com/sjkey) — Slack support and message simplification (v5.0.0)
+- [@JairFC](https://github.com/JairFC) —— 项目创建者与维护者
+- [@sjkey](https://github.com/sjkey) —— Slack 支持与消息简化（v5.0.0）
 
 ## 许可证
 
