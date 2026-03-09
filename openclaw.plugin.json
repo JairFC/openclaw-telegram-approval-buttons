@@ -20,6 +20,38 @@
         "type": "string",
         "description": "Telegram bot token. Falls back to channels.telegram.token or TELEGRAM_BOT_TOKEN env."
       },
+      "proxy": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Legacy shorthand proxy URL for Telegram Bot API requests."
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether proxying is enabled for Telegram Bot API requests."
+              },
+              "url": {
+                "type": "string",
+                "description": "HTTP/HTTPS proxy URL for Telegram Bot API requests."
+              },
+              "strict": {
+                "type": "boolean",
+                "description": "If true, fail closed when proxy is configured but unavailable."
+              },
+              "insecureTls": {
+                "type": "boolean",
+                "description": "Allow insecure TLS when the proxy injects a self-signed certificate chain."
+              }
+            },
+            "required": ["url"]
+          }
+        ],
+        "description": "Optional proxy configuration. Falls back to channels.telegram.proxy when omitted."
+      },
       "slackBotToken": {
         "type": "string",
         "description": "Slack bot OAuth token. Falls back to channels.slack.token or SLACK_BOT_TOKEN env."
@@ -58,6 +90,12 @@
       "sensitive": true,
       "placeholder": "Auto-detected from channels.telegram.token",
       "help": "Only needed if different from the main Telegram channel token."
+    },
+    "proxy": {
+      "label": "Telegram Proxy",
+      "placeholder": "http://127.0.0.1:7890",
+      "help": "Supports legacy string URL or structured object config. Falls back to channels.telegram.proxy when omitted. Use insecureTls only when your proxy intercepts TLS with a self-signed CA.",
+      "advanced": true
     },
     "slackBotToken": {
       "label": "Slack Bot Token",

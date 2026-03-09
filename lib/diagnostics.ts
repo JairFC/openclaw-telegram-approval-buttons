@@ -12,7 +12,7 @@ import type { ApprovalStore } from "./approval-store.js";
 
 export interface ConfigSources {
   pluginConfig: PluginConfig;
-  telegramChannelConfig: { token?: string; allowFrom?: (string | number)[] };
+  telegramChannelConfig: { token?: string; proxy?: string; allowFrom?: (string | number)[] };
   slackChannelConfig: { token?: string; botToken?: string; allowFrom?: (string | number)[] };
   env: {
     TELEGRAM_BOT_TOKEN?: string;
@@ -31,6 +31,37 @@ export interface ConfigSources {
  * Returns null only if BOTH Telegram and Slack are unconfigurable.
  * Either channel can be independently enabled/disabled.
  */
+function resolveTelegramProxy(pluginProxy: PluginConfig["proxy"], channelProxy?: string) {
+  if (pluginProxy && typeof pluginProxy === "object" && pluginProxy.url) {
+    return {
+      enabled: pluginProxy.enabled !== false,
+      url: pluginProxy.url,
+      strict: pluginProxy.strict !== false,
+      insecureTls: pluginProxy.insecureTls === true,
+      source: "plugin" as const,
+    };
+  }
+  if (typeof pluginProxy === "string" && pluginProxy) {
+    return {
+      enabled: true,
+      url: pluginProxy,
+      strict: true,
+      insecureTls: false,
+      source: "plugin" as const,
+    };
+  }
+  if (channelProxy) {
+    return {
+      enabled: true,
+      url: channelProxy,
+      strict: false,
+      insecureTls: false,
+      source: "channel" as const,
+    };
+  }
+  return undefined;
+}
+
 export function resolveConfig(
   sources: ConfigSources,
   log: Logger,
@@ -57,9 +88,11 @@ export function resolveConfig(
     }
   }
 
+  const tgProxy = resolveTelegramProxy(pluginConfig.proxy, telegramChannelConfig.proxy);
+
   const telegram =
     tgBotToken && tgChatId
-      ? { chatId: tgChatId, botToken: tgBotToken }
+      ? { chatId: tgChatId, botToken: tgBotToken, ...(tgProxy ? { proxy: tgProxy } : {}) }
       : null;
 
   if (!telegram) {
@@ -191,7 +224,10 @@ export function logStartupDiagnostics(
   if (config.telegram) {
     const maskedToken = config.telegram.botToken.slice(0, 6) + "…" + config.telegram.botToken.slice(-4);
     const maskedChatId = config.telegram.chatId.slice(0, 3) + "…" + config.telegram.chatId.slice(-2);
-    channels.push(`telegram(chatId=${maskedChatId}, token=${maskedToken})`);
+    const proxyInfo = config.telegram.proxy
+      ? `, proxy=${config.telegram.proxy.source}:${config.telegram.proxy.strict ? "strict" : "inherit"}${config.telegram.proxy.insecureTls ? ":insecure-tls" : ""}`
+      : "";
+    channels.push(`telegram(chatId=${maskedChatId}, token=${maskedToken}${proxyInfo})`);
   }
 
   if (config.slack) {

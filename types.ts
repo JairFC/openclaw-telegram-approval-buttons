@@ -71,6 +71,8 @@ export interface PluginConfig {
   language?: "en" | "zh-CN";
   /** Telegram bot token (optional — falls back to channels.telegram.token) */
   botToken?: string;
+  /** Proxy config for Telegram Bot API requests (optional — falls back to channels.telegram.proxy) */
+  proxy?: string | { enabled?: boolean; url: string; strict?: boolean; insecureTls?: boolean };
   /** Slack bot OAuth token (optional — falls back to channels.slack.token) */
   slackBotToken?: string;
   /** Slack channel/DM ID to send approval buttons to (optional — falls back to channels.slack config) */
@@ -87,6 +89,13 @@ export interface PluginConfig {
 export interface ResolvedTelegramConfig {
   chatId: string;
   botToken: string;
+  proxy?: {
+    enabled: boolean;
+    url: string;
+    strict: boolean;
+    insecureTls: boolean;
+    source: "plugin" | "channel";
+  };
 }
 
 /**
