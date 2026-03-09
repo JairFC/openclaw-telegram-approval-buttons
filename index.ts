@@ -57,6 +57,7 @@ function register(api: any): void {
       pluginConfig: pluginCfg,
       telegramChannelConfig: {
         token: telegramCfg.token || telegramCfg.botToken,
+        proxy: telegramCfg.proxy,
         allowFrom: telegramCfg.allowFrom,
       },
       slackChannelConfig: {
@@ -84,7 +85,7 @@ function register(api: any): void {
   // ─── 2. Initialize API clients ────────────────────────────────────────
 
   const tg = config.telegram
-    ? new TelegramApi(config.telegram.botToken, config.verbose ? log : undefined)
+    ? new TelegramApi(config.telegram.botToken, config.telegram, config.verbose ? log : undefined)
     : null;
 
   const slack = config.slack
