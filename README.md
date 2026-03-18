@@ -1,3 +1,9 @@
+
+--Closed #30695.
+
+
+
+
 # 🔐 Approval Buttons for OpenClaw
 
 > One-tap `exec` approvals in **Telegram** and **Slack** — no more typing `/approve <uuid> allow-once`.
