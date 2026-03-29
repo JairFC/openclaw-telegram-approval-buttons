@@ -8,11 +8,15 @@ import type { ApprovalAction, ApprovalInfo, ApprovalResolution, SentApproval } f
 // ─── Regex patterns (compiled once) ─────────────────────────────────────────
 
 const RE_APPROVAL_MARKER = /Exec approval required/i;
+const RE_NATIVE_APPROVAL_MARKER = /\bApproval required\b/i;
+const RE_TOOLRESULT_APPROVAL = /Approval required\s*\(id\s+([a-f0-9-]{8,})\s*,\s*full\s+([a-f0-9-]{8,})\)/i;
 const RE_ID = /ID:\s*([a-f0-9-]+)/i;
+const RE_FULL_ID = /Full id:\s*([a-f0-9-]{8,})/i;
+const RE_APPROVE_CMD = /\/approve\s+([a-f0-9-]{8,})\s+(allow-once|allow-always|deny)\b/i;
 const RE_UUID = /([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
 const RE_SHORT_HEX = /\b([a-f0-9]{8,})\b/i;
 const RE_GATEWAY_DENIAL = /Exec denied.*approval-timeout/i;
-const RE_COMMAND_BLOCK = /Command:\s*`{0,3}\n?(.+?)\n?`{0,3}(?:\n|$)/is;
+const RE_COMMAND_BLOCK = /Command:\s*```(?:[a-z0-9_+-]+)?\n([\s\S]+?)\n```/i;
 const RE_COMMAND_INLINE = /Command:\s*(.+)/i;
 const RE_CWD = /CWD:\s*(.+)/i;
 const RE_HOST = /Host:\s*(.+)/i;
@@ -20,6 +24,7 @@ const RE_AGENT = /Agent:\s*(.+)/i;
 const RE_SECURITY = /Security:\s*(.+)/i;
 const RE_ASK = /Ask:\s*(.+)/i;
 const RE_EXPIRES = /Expires in:\s*(.+)/i;
+const RE_PENDING_COMMAND = /Pending command:\s*`{0,3}\n?(.+?)\n?(?:`{0,3})(?:\n|$)/is;
 
 /**
  * Parse OpenClaw's plain-text approval message into an ApprovalInfo object.
@@ -29,14 +34,32 @@ const RE_EXPIRES = /Expires in:\s*(.+)/i;
  * falls back to sensible defaults for missing fields.
  */
 export function parseApprovalText(text: string): ApprovalInfo | null {
-  if (!RE_APPROVAL_MARKER.test(text)) return null;
+  const hasLegacyMarker = RE_APPROVAL_MARKER.test(text);
+  const hasNativeMarker = RE_NATIVE_APPROVAL_MARKER.test(text);
+  const toolResultMatch = text.match(RE_TOOLRESULT_APPROVAL);
 
-  const id = text.match(RE_ID)?.[1]?.trim();
+  let id = hasLegacyMarker ? text.match(RE_ID)?.[1]?.trim() : undefined;
+
+  if (!id && toolResultMatch) {
+    id = toolResultMatch[2]?.trim() || toolResultMatch[1]?.trim();
+  }
+
+  if (!id && hasNativeMarker) {
+    id = text.match(RE_FULL_ID)?.[1]?.trim();
+  }
+
+  // OpenClaw 2026 format often delivers plain guidance text like:
+  // `/approve <id> allow-once` (with or without markdown backticks).
+  if (!id) {
+    id = text.match(RE_APPROVE_CMD)?.[1]?.trim();
+  }
+
   if (!id) return null;
 
-  // Try block format first (```command```), then inline
-  let command = text.match(RE_COMMAND_BLOCK)?.[1]?.trim();
-  if (!command) command = text.match(RE_COMMAND_INLINE)?.[1]?.trim() ?? "unknown";
+  const command = text.match(RE_COMMAND_BLOCK)?.[1]?.trim()
+    ?? text.match(RE_PENDING_COMMAND)?.[1]?.trim()
+    ?? text.match(RE_COMMAND_INLINE)?.[1]?.trim()
+    ?? "approval-pending";
 
   return {
     id,
