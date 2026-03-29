@@ -16,6 +16,7 @@ import { SlackApi } from "./lib/slack-api.js";
 import { ApprovalStore } from "./lib/approval-store.js";
 import { parseApprovalText, detectApprovalResult } from "./lib/approval-parser.js";
 import {
+  escapeHtml,
   formatApprovalRequest,
   formatApprovalResolved,
   formatApprovalExpired,
@@ -41,6 +42,7 @@ const PLUGIN_VERSION = "5.0.1";
 const TAG = "telegram-approval-buttons";
 
 const RE_RICH_APPROVAL_HEADER = /^\s*🔐\s+<b>Exec Approval<\/b>/i;
+const RE_ASSISTANT_APPROVE_FALLBACK = /\/approve\s+[a-f0-9-]{8,}\s+(allow-once|allow-always|deny)\b/i;
 
 function approvalIdVariants(id: string): string[] {
   const clean = id.trim();
@@ -276,14 +278,17 @@ async function handleTelegram(
   if (event.content.trim() === "NO_REPLY") {
     const completion = getLastCompletion();
     if (completion && Date.now() - completion.capturedAt <= 120_000) {
-      await tg.sendMessage(
+      const sentId = await tg.sendMessage(
         chatId,
         [
-          "✅ <b>Comando ejecutado</b>",
+          "✅ <b>Command completed</b>",
           "",
-          `<pre>${completion.output.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`,
+          `<pre>${escapeHtml(completion.output)}</pre>`,
         ].join("\n"),
       );
+      if (sentId === null) {
+        log.warn(`[${TAG}] telegram failed to deliver NO_REPLY completion output`);
+      }
       clearLastCompletion();
       setLastResolved(null);
       return { cancel: true };
@@ -291,16 +296,19 @@ async function handleTelegram(
 
     const resolved = getLastResolved();
     if (resolved && Date.now() - resolved.resolvedAt <= 120_000) {
-      await tg.sendMessage(
+      const sentId = await tg.sendMessage(
         chatId,
         [
-          "✅ <b>Comando ejecutado</b>",
+          "✅ <b>Command completed</b>",
           "",
-          `<code>${resolved.command.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code>`,
+          `<code>${escapeHtml(resolved.command)}</code>`,
           "",
-          "La salida no se reenvio por el agente (NO_REPLY).",
+          "Output was not forwarded by the agent (NO_REPLY).",
         ].join("\n"),
       );
+      if (sentId === null) {
+        log.warn(`[${TAG}] telegram failed to deliver NO_REPLY fallback notice`);
+      }
       setLastResolved(null);
       return { cancel: true };
     }
@@ -333,7 +341,7 @@ async function handleTelegram(
   if (!info) return;
 
   const looksLikeAssistantFallback =
-    /\/approve\s+[a-f0-9-]{8,}\s+allow-once/i.test(event.content)
+    RE_ASSISTANT_APPROVE_FALLBACK.test(event.content)
     && !/Exec approval required/i.test(event.content)
     && !/\bApproval required\b/i.test(event.content);
 
