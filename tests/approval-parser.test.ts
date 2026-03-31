@@ -33,6 +33,36 @@ Ask: always
 Expires in: 300s
 ID: aaaabbbb-cccc-dddd-eeee-ffffffffffff`;
 
+const SAMPLE_APPROVE_INSTRUCTIONS = `Usa exactamente esto para aprobar:
+
+/approve 0d72218f allow-once
+
+o si quieres dejar este tipo de comando aprobado de forma persistente:
+
+/approve 0d72218f allow-always`;
+
+const SAMPLE_NATIVE_APPROVAL = `Approval required.
+Run:
+/approve c154b8e9-9c4e-49bd-afdd-964f768e6151 allow-once
+Pending command:
+uname -a
+Other options:
+/approve c154b8e9-9c4e-49bd-afdd-964f768e6151 allow-always
+/approve c154b8e9-9c4e-49bd-afdd-964f768e6151 deny
+Host: gateway
+CWD: /home/blazz/.openclaw/workspace
+Expires in: 120s
+Full id: c154b8e9-9c4e-49bd-afdd-964f768e6151`;
+
+const SAMPLE_TOOLRESULT_APPROVAL = `Approval required (id e5bcf8b4, full e5bcf8b4-7136-49af-8963-c50e3d8e9bef).
+Host: gateway
+CWD: /home/blazz/.openclaw/workspace
+Command:
+\`\`\`sh
+uname -a
+\`\`\`
+Reply with: /approve e5bcf8b4 allow-once|allow-always|deny`;
+
 // ─── parseApprovalText ──────────────────────────────────────────────────────
 
 describe("parseApprovalText", () => {
@@ -66,6 +96,37 @@ describe("parseApprovalText", () => {
     it("returns null if ID is missing", () => {
         const noId = "🔒 Exec approval required\nCommand: ls\nAgent: main";
         expect(parseApprovalText(noId)).toBeNull();
+    });
+
+    it("parses OpenClaw 2026 /approve instruction format", () => {
+        const result = parseApprovalText(SAMPLE_APPROVE_INSTRUCTIONS);
+        expect(result).not.toBeNull();
+        expect(result!.id).toBe("0d72218f");
+        expect(result!.command).toBe("approval-pending");
+    });
+
+    it("parses direct /approve command line", () => {
+        const result = parseApprovalText("/approve 36155d89 allow-once");
+        expect(result).not.toBeNull();
+        expect(result!.id).toBe("36155d89");
+    });
+
+    it("parses native approval summary format", () => {
+        const result = parseApprovalText(SAMPLE_NATIVE_APPROVAL);
+        expect(result).not.toBeNull();
+        expect(result!.id).toBe("c154b8e9-9c4e-49bd-afdd-964f768e6151");
+        expect(result!.command).toBe("uname -a");
+        expect(result!.host).toBe("gateway");
+        expect(result!.cwd).toBe("/home/blazz/.openclaw/workspace");
+        expect(result!.expires).toBe("120s");
+    });
+
+    it("parses tool-result approval format with full id", () => {
+        const result = parseApprovalText(SAMPLE_TOOLRESULT_APPROVAL);
+        expect(result).not.toBeNull();
+        expect(result!.id).toBe("e5bcf8b4-7136-49af-8963-c50e3d8e9bef");
+        expect(result!.command).toBe("uname -a");
+        expect(result!.host).toBe("gateway");
     });
 
     it("provides defaults for missing optional fields", () => {
