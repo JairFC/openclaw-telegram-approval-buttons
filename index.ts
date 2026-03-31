@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// telegram-approval-buttons · index.ts (v5.0.1)
+// telegram-approval-buttons · index.ts (v5.1.0)
 // Plugin entry point — orchestration only, all logic lives in lib/
 //
 // Adds inline keyboard/button approval messages to Telegram and Slack.
@@ -38,7 +38,7 @@ import {
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const PLUGIN_VERSION = "5.0.1";
+const PLUGIN_VERSION = "5.1.0";
 const TAG = "telegram-approval-buttons";
 
 const RE_RICH_APPROVAL_HEADER = /^\s*🔐\s+<b>Exec Approval<\/b>/i;

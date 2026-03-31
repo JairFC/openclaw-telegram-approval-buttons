@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-03-31
+
+### Added
+- **OpenClaw 2026 approval format support** — parser now handles native `Approval required`, `Full id:`, tool-result `(id ..., full ...)`, and `/approve ...` guidance formats (#4)
+- **Async completion delivery** — captures post-approval exec output when the agent emits `NO_REPLY` and delivers results to Telegram users instead of silently dropping them
+- **Duplicate approval suppression** — detects and cancels assistant fallback `/approve` messages when a native approval prompt already exists, preventing double prompts
+
+### Fixed
+- Broadened duplicate fallback suppression to cover all actions (`allow-once|allow-always|deny`)
+- `NO_REPLY` delivery paths now reuse shared `escapeHtml` helper instead of manual `.replace()` chains
+- Added null-result handling + warning logs for failed Telegram `NO_REPLY` sends
+- Normalized `NO_REPLY` user-facing strings to English for consistency
+
+### Contributors
+
+Thanks to [@BlazzzPlay](https://github.com/BlazzzPlay) for contributing OpenClaw 2026 compatibility and async completion delivery in this release 🙏
+
 ## [5.0.1] - 2026-03-01
 
 ### Fixed
